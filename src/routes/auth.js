@@ -71,6 +71,8 @@ router.post('/request', async (req, res) => {
       await sendMagicLink(email, token);
     } catch (emailErr) {
       console.error('Failed to send magic link email:', emailErr.message);
+      const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
+      console.warn('[DEV] Magic link (email failed):', link);
     }
 
     res.status(201).json({
@@ -175,6 +177,50 @@ router.post('/verify', async (req, res) => {
     res.status(500).json({ error: 'Failed to verify token' });
   } finally {
     client.release();
+  }
+});
+
+// POST /api/auth/signin
+// Body: { email }
+// Upserts the user (creates account if new), then sends a magic link.
+// Works for both new and returning users; no reservation required.
+router.post('/signin', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'A valid email address is required' });
+  }
+
+  try {
+    // Upsert user (re-evaluates admin status)
+    await pool.query(
+      `INSERT INTO users (email, is_admin)
+         VALUES ($1, $2)
+         ON CONFLICT (email) DO UPDATE
+           SET is_admin = EXCLUDED.is_admin`,
+      [email.toLowerCase(), isAdminEmail(email)]
+    );
+
+    const token     = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await pool.query(
+      `INSERT INTO auth_tokens (email, token, expires_at) VALUES ($1, $2, $3)`,
+      [email.toLowerCase(), token, expiresAt]
+    );
+
+    try {
+      await sendMagicLink(email, token);
+    } catch (emailErr) {
+      console.error('Failed to send sign-in email:', emailErr.message);
+      const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
+      console.warn('[DEV] Magic link (email failed):', link);
+    }
+
+    res.json({ message: 'Sign-in link sent. Check your email.' });
+  } catch (err) {
+    console.error('POST /api/auth/signin error:', err);
+    res.status(500).json({ error: 'Failed to send sign-in link' });
   }
 });
 

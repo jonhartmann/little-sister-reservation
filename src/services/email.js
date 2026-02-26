@@ -1,15 +1,17 @@
 'use strict';
 const Mailjet = require('node-mailjet');
 
-const mailjet = Mailjet.apiConnect(
-  process.env.MAILJET_API_KEY,
-  process.env.MAILJET_SECRET_KEY,
-);
+function getClient() {
+  return Mailjet.apiConnect(
+    process.env.MAILJET_API_KEY,
+    process.env.MAILJET_SECRET_KEY,
+  );
+}
 
 async function sendMagicLink(email, token) {
-  const link = `${process.env.BASE_URL}/api/auth/verify?token=${token}`;
+  const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
 
-  await mailjet.post('send', { version: 'v3.1' }).request({
+  await getClient().post('send', { version: 'v3.1' }).request({
     Messages: [{
       From: {
         Email: process.env.MAILJET_FROM_EMAIL,
@@ -17,47 +19,134 @@ async function sendMagicLink(email, token) {
       },
       To: [{ Email: email }],
       Subject: 'Your Little Sister sign-in link',
-      TextPart: `Click this link to sign in (expires in 15 minutes):\n\n${link}\n\nIf you did not request this, you can ignore this email.`,
+      TextPart: `Click this link to sign in (expires in 15 minutes):\n\n${link}\n\nIf you don't see this email in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.\n\nIf you did not request this, you can ignore this email.`,
       HTMLPart: `
         <h2>Sign in to Little Sister</h2>
         <p>Click the button below to sign in. This link expires in <strong>15 minutes</strong> and can only be used once.</p>
         <p><a href="${link}" style="background:#4a90e2;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;">Sign In</a></p>
         <p>Or copy and paste this URL:<br><code>${link}</code></p>
+        <p style="font-size:0.9em;color:#888;">If you don't see future emails from us in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.</p>
         <p><em>If you did not request this, you can ignore this email.</em></p>
       `,
     }],
   });
 }
 
-async function sendStatusUpdate(email, reservation, adminNote) {
-  const statusMessages = {
-    approved:  'Your reservation has been approved!',
-    denied:    'Your reservation request was not approved.',
-    cancelled: 'Your reservation has been cancelled.',
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function buildStatusEmail(reservation, adminNote) {
+  const start = fmtDate(reservation.start_date);
+  const end   = fmtDate(reservation.end_date);
+  const dashboardUrl = process.env.BASE_URL;
+
+  const addr    = process.env.PROPERTY_ADDRESS     || '[Address TBD]';
+  const checkIn = process.env.PROPERTY_CHECKIN_TIME  || '[Check-in time TBD]';
+  const checkOut= process.env.PROPERTY_CHECKOUT_TIME || '[Check-out time TBD]';
+  const contact = process.env.PROPERTY_CONTACT_NAME  || '[Host name TBD]';
+  const phone   = process.env.PROPERTY_CONTACT_PHONE || '[Phone TBD]';
+
+  const noteText = adminNote ? `Note from host: ${adminNote}\n\n` : '';
+  const noteHtml = adminNote ? `<p><strong>Note from host:</strong> ${adminNote}</p>` : '';
+
+  if (reservation.status === 'approved') {
+    return {
+      subject: 'Your Little Sister stay is confirmed!',
+      textPart: [
+        `Great news — your stay at Little Sister is confirmed!`,
+        `Dates: ${start} → ${end}`,
+        `Address: ${addr}`,
+        `Check-in: ${checkIn}\nCheck-out: ${checkOut}`,
+        noteText + `Questions? Reach out any time:\n${contact}\n${phone}`,
+        `Sign in to view your reservation: ${dashboardUrl}`,
+      ].join('\n\n'),
+      htmlPart: `
+        <h2>Your stay is confirmed!</h2>
+        <p>Great news — we're so happy to have you at Little Sister.</p>
+        <table style="border-collapse:collapse;width:100%;margin:1.5em 0;">
+          <tr>
+            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Dates</td>
+            <td style="padding:0.5em 0;font-weight:700;">${start} &rarr; ${end}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Address</td>
+            <td style="padding:0.5em 0;">${addr}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Check-in</td>
+            <td style="padding:0.5em 0;">${checkIn}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Check-out</td>
+            <td style="padding:0.5em 0;">${checkOut}</td>
+          </tr>
+        </table>
+        ${noteHtml}
+        <p>Questions? Reach out any time — <strong>${contact}</strong> at ${phone}.</p>
+        <p><a href="${dashboardUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">View Reservation</a></p>
+      `,
+    };
+  }
+
+  if (reservation.status === 'denied') {
+    return {
+      subject: 'About your Little Sister reservation request',
+      textPart: [
+        `Thank you for your interest in Little Sister.`,
+        `Unfortunately, we're unable to accommodate your request for ${start} – ${end}.`,
+        noteText.trimEnd() || '',
+        `We hope you'll consider reaching out for future dates.`,
+      ].filter(Boolean).join('\n\n'),
+      htmlPart: `
+        <h2>About your reservation request</h2>
+        <p>Thank you for your interest in Little Sister.</p>
+        <p>Unfortunately, we're unable to accommodate your request for <strong>${start} – ${end}</strong>.</p>
+        ${noteHtml}
+        <p>We hope you'll consider reaching out for future dates.</p>
+      `,
+    };
+  }
+
+  if (reservation.status === 'cancelled') {
+    return {
+      subject: 'Your Little Sister reservation has been cancelled',
+      textPart: [
+        `Your reservation for ${start} – ${end} has been cancelled.`,
+        noteText.trimEnd() || '',
+        `If you have questions, feel free to get in touch.`,
+      ].filter(Boolean).join('\n\n'),
+      htmlPart: `
+        <h2>Reservation cancelled</h2>
+        <p>Your reservation for <strong>${start} – ${end}</strong> has been cancelled.</p>
+        ${noteHtml}
+        <p>If you have questions, feel free to get in touch.</p>
+      `,
+    };
+  }
+
+  // Fallback for any other status
+  return {
+    subject: `Little Sister reservation update`,
+    textPart: `Your reservation status has been updated to: ${reservation.status}\n\nDates: ${start} – ${end}\n\n${noteText}${dashboardUrl}`,
+    htmlPart: `<p>Your reservation status has been updated to <strong>${reservation.status}</strong>.</p><p>Dates: ${start} – ${end}</p>${noteHtml}<p><a href="${dashboardUrl}">View reservation</a></p>`,
   };
+}
 
-  const headline = statusMessages[reservation.status] || `Reservation status: ${reservation.status}`;
+async function sendStatusUpdate(email, reservation, adminNote) {
+  const { subject, textPart, htmlPart } = buildStatusEmail(reservation, adminNote);
 
-  await mailjet.post('send', { version: 'v3.1' }).request({
+  await getClient().post('send', { version: 'v3.1' }).request({
     Messages: [{
       From: {
         Email: process.env.MAILJET_FROM_EMAIL,
         Name: process.env.MAILJET_FROM_NAME,
       },
       To: [{ Email: email }],
-      Subject: `Little Sister Reservation Update: ${reservation.status}`,
-      TextPart: [
-        headline,
-        `Dates: ${reservation.start_date} to ${reservation.end_date}`,
-        adminNote ? `Note from host: ${adminNote}` : '',
-        `Sign in to view your reservation: ${process.env.BASE_URL}`,
-      ].filter(Boolean).join('\n\n'),
-      HTMLPart: `
-        <h2>${headline}</h2>
-        <p><strong>Dates:</strong> ${reservation.start_date} to ${reservation.end_date}</p>
-        ${adminNote ? `<p><strong>Note from host:</strong> ${adminNote}</p>` : ''}
-        <p><a href="${process.env.BASE_URL}">View your reservation</a></p>
-      `,
+      Subject: subject,
+      TextPart: textPart,
+      HTMLPart: htmlPart,
     }],
   });
 }

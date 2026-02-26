@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 const { initDb } = require('./src/db');
 const { startScheduler } = require('./src/services/scheduler');
@@ -31,8 +32,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Little Sister Reservation System is running' });
 });
 
-// Static frontend (uncomment when public/ directory exists)
-// app.use(express.static(path.join(__dirname, 'public')));
+// Serve frontend from public/
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 404 for unknown API routes
 app.use('/api/*', (req, res) => {
@@ -45,7 +46,23 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+function checkEnv() {
+  const required = [
+    'DATABASE_URL',
+    'MAILJET_API_KEY',
+    'MAILJET_SECRET_KEY',
+    'MAILJET_FROM_EMAIL',
+    'BASE_URL',
+  ];
+  const missing = required.filter(k => !process.env[k]);
+  if (missing.length) {
+    console.warn('WARNING: Missing environment variables:', missing.join(', '));
+    console.warn('Email sending will fail until these are set in .env');
+  }
+}
+
 async function start() {
+  checkEnv();
   await initDb();
   startScheduler();
   app.listen(PORT, () => {

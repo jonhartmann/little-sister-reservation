@@ -1,0 +1,63 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>My Reservations — Little Sister</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<link rel="stylesheet" href="assets/css/main.css" />
+	<link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="app-page is-preload">
+
+	<nav class="app-nav">
+		<a href="/" class="site-name">Little Sister</a>
+		<div class="nav-right">
+			<span class="nav-user" id="nav-user-name"></span>
+			<button class="button small" id="btn-signout">Sign Out</button>
+		</div>
+	</nav>
+
+	<div class="app-body">
+
+		<!-- Profile -->
+		<div class="app-section">
+			<h2>My Profile</h2>
+			<form id="form-profile">
+				<div class="row gtr-uniform">
+					<div class="col-6 col-12-small">
+						<input type="text" id="profile-first-name" placeholder="First name" />
+					</div>
+					<div class="col-6 col-12-small">
+						<input type="text" id="profile-last-name" placeholder="Last name" />
+					</div>
+					<div class="col-12">
+						<input type="email" id="profile-email" disabled style="opacity:0.6;" />
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><button type="submit" class="button primary small">Save Profile</button></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+			<div id="profile-message"></div>
+		</div>
+
+		<!-- Reservations -->
+		<div class="app-section">
+			<h2>My Reservations</h2>
+			<div id="reservations-list">
+				<div class="empty-state">
+					<div class="empty-icon">&#x1F4C5;</div>
+					<p>Loading your reservations&hellip;</p>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+	<script src="assets/js/api.js"></script>
+	<script src="assets/js/dashboard.js"></script>
+
+</body>
+</html>

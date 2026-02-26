@@ -1,0 +1,121 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>Little Sister — Guest House Reservations</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<link rel="stylesheet" href="assets/css/main.css" />
+	<link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="is-preload">
+
+	<!-- Header -->
+	<section id="header">
+		<header class="major">
+			<h1>Little Sister</h1>
+			<p>A cozy guest house in Athens, Georgia</p>
+		</header>
+		<div class="container">
+			<ul class="actions special">
+				<li><a href="#availability" class="button primary scrolly">Check Availability</a></li>
+				<li><a href="#signin" class="button scrolly">Returning Guest</a></li>
+			</ul>
+		</div>
+	</section>
+
+	<!-- Availability + Reservation Form -->
+	<section id="availability" class="main special">
+		<div class="container">
+			<span class="image fit primary"><img src="images/pic01.jpg" alt="Little Sister guest house" /></span>
+			<div class="content">
+				<header class="major">
+					<h2>Check Availability</h2>
+				</header>
+				<p>Select your check-in and check-out dates below. Greyed dates are already reserved.</p>
+
+				<div class="cal-nav">
+					<button class="button small" id="cal-prev">&#8592; Previous</button>
+					<span id="cal-month-label" style="font-weight:800;letter-spacing:0.05em;text-transform:uppercase;font-size:0.85em;color:#61686b;"></span>
+					<button class="button small" id="cal-next">Next &#8594;</button>
+				</div>
+				<div id="calendar-container"></div>
+				<div id="cal-status"></div>
+
+				<!-- Reservation form — shown after date range is selected -->
+				<div id="reservation-form" style="display:none;">
+					<h3>Request Your Stay</h3>
+					<p id="selected-dates-display"></p>
+					<form id="form-reservation">
+						<div class="row gtr-uniform">
+							<div class="col-12">
+								<input type="email" id="res-email" placeholder="Your email address *" required />
+							</div>
+							<div class="col-12">
+								<textarea id="res-description" placeholder="Tell us about your visit — who's coming, how you heard about us, etc." rows="4"></textarea>
+							</div>
+							<div class="col-12">
+								<ul class="actions special">
+									<li><button type="submit" class="button primary">Request Reservation</button></li>
+									<li><button type="button" class="button" id="btn-clear-dates">Clear Dates</button></li>
+								</ul>
+							</div>
+						</div>
+					</form>
+					<div id="form-message"></div>
+				</div>
+			</div>
+			<a href="#signin" class="goto-next scrolly">Next</a>
+		</div>
+	</section>
+
+	<!-- Sign In for returning guests -->
+	<section id="signin" class="main special">
+		<div class="container">
+			<span class="image fit primary"><img src="images/pic02.jpg" alt="" /></span>
+			<div class="content">
+				<header class="major">
+					<h2>Returning Guest?</h2>
+				</header>
+				<p>Enter your email address and we'll send you a sign-in link to check your reservation status or update your profile.</p>
+				<form id="form-signin">
+					<div class="row gtr-uniform">
+						<div class="col-12">
+							<input type="email" id="signin-email" placeholder="Your email address" required />
+						</div>
+						<div class="col-12">
+							<ul class="actions special">
+								<li><button type="submit" class="button primary">Send Sign-In Link</button></li>
+							</ul>
+						</div>
+					</div>
+				</form>
+				<div id="signin-message"></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Footer -->
+	<section id="footer">
+		<footer>
+			<ul class="copyright">
+				<li>&copy; Little Sister</li>
+				<li>Athens, Georgia</li>
+			</ul>
+			<p>Design: <a href="http://html5up.net">HTML5 UP</a></p>
+		</footer>
+	</section>
+
+	<!-- Scripts -->
+	<script src="assets/js/jquery.min.js"></script>
+	<script src="assets/js/jquery.scrollex.min.js"></script>
+	<script src="assets/js/jquery.scrolly.min.js"></script>
+	<script src="assets/js/browser.min.js"></script>
+	<script src="assets/js/breakpoints.min.js"></script>
+	<script src="assets/js/util.js"></script>
+	<script src="assets/js/main.js"></script>
+	<script src="assets/js/api.js"></script>
+	<script src="assets/js/calendar.js"></script>
+	<script src="assets/js/home.js"></script>
+
+</body>
+</html>

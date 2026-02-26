@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>Admin — Little Sister</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<link rel="stylesheet" href="assets/css/main.css" />
+	<link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="app-page is-preload">
+
+	<nav class="app-nav">
+		<a href="/" class="site-name">Little Sister</a>
+		<div class="nav-right">
+			<span class="nav-user">Admin</span>
+			<button class="button small" id="btn-signout">Sign Out</button>
+		</div>
+	</nav>
+
+	<div class="app-body" style="max-width:1100px;">
+
+		<!-- Block Time -->
+		<div class="app-section">
+			<h2>Block Time</h2>
+			<p style="color:#9fa6a8;margin-bottom:1.25em;">Reserve a date range for maintenance, personal use, or any other reason. Blocked dates appear as unavailable on the guest calendar.</p>
+			<form id="form-block">
+				<div class="row gtr-uniform">
+					<div class="col-3 col-6-medium col-12-small">
+						<label style="font-size:0.8em;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9fa6a8;">Start Date</label>
+						<input type="date" id="block-start" required />
+					</div>
+					<div class="col-3 col-6-medium col-12-small">
+						<label style="font-size:0.8em;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9fa6a8;">End Date</label>
+						<input type="date" id="block-end" required />
+					</div>
+					<div class="col-6 col-12-small">
+						<label style="font-size:0.8em;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9fa6a8;">Note (optional)</label>
+						<input type="text" id="block-note" placeholder="e.g. Maintenance, Family visit…" />
+					</div>
+					<div class="col-12">
+						<button type="submit" class="button primary small" id="btn-block-submit">Block Dates</button>
+					</div>
+				</div>
+			</form>
+			<div id="block-message"></div>
+		</div>
+
+		<!-- Reservations -->
+		<div class="app-section">
+			<h2>Reservations</h2>
+
+			<!-- Filter bar -->
+			<div class="filter-bar" id="filter-bar">
+				<button class="button small active" data-filter="all">All</button>
+				<button class="button small" data-filter="pending">Pending</button>
+				<button class="button small" data-filter="approved">Approved</button>
+				<button class="button small" data-filter="denied">Denied</button>
+				<button class="button small" data-filter="cancelled">Cancelled</button>
+				<button class="button small" data-filter="expired">Expired</button>
+				<button class="button small" data-filter="complete">Complete</button>
+				<button class="button small" data-filter="blocked">Blocked</button>
+			</div>
+
+			<div id="admin-table-wrapper">
+				<div class="empty-state">
+					<p>Loading reservations&hellip;</p>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+	<script src="assets/js/api.js"></script>
+	<script src="assets/js/admin.js"></script>
+
+</body>
+</html>

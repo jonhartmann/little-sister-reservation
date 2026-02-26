@@ -1,0 +1,392 @@
+/* ============================================================
+   Little Sister — App-specific styles
+   Primary: #8cd1a8  Background: #313a3d  Text: #6f7577
+   ============================================================ */
+
+/* ── Calendar ─────────────────────────────────────────────── */
+
+.cal-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25em;
+}
+
+.cal-months-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2em;
+  margin-bottom: 1.5em;
+}
+
+@media screen and (max-width: 640px) {
+  .cal-months-grid { grid-template-columns: 1fr; }
+}
+
+.cal-month-header {
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.9em;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  color: #61686b;
+  margin-bottom: 0.75em;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-day-name {
+  text-align: center;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.3em 0;
+  color: #9fa6a8;
+}
+
+.cal-day {
+  text-align: center;
+  padding: 0.5em 0.1em;
+  border-radius: 4px;
+  font-size: 0.85em;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  color: #61686b;
+}
+
+.cal-day:not(.booked):not(.past):not(.empty):hover {
+  background-color: rgba(140, 209, 168, 0.25);
+}
+
+.cal-day.booked {
+  background-color: rgba(180, 80, 80, 0.12);
+  color: #c08080;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.cal-day.past {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.cal-day.empty {
+  cursor: default;
+}
+
+.cal-day.today {
+  font-weight: 700;
+  color: #8cd1a8;
+}
+
+.cal-day.selected-endpoint {
+  background-color: #8cd1a8;
+  color: #fff !important;
+  font-weight: 700;
+  border-radius: 4px;
+}
+
+.cal-day.in-range {
+  background-color: rgba(140, 209, 168, 0.2);
+  border-radius: 0;
+}
+
+.cal-hint {
+  font-size: 0.9em;
+  color: #8cd1a8;
+  margin-bottom: 1em;
+  text-align: center;
+}
+
+.cal-error {
+  color: #e08080;
+  font-size: 0.9em;
+  text-align: center;
+  margin-bottom: 1em;
+}
+
+/* ── Reservation form reveal ──────────────────────────────── */
+
+#reservation-form {
+  margin-top: 2em;
+  border-top: solid 1px #e8e8e8;
+  padding-top: 2em;
+}
+
+#selected-dates-display {
+  font-weight: 700;
+  color: #8cd1a8;
+  margin-bottom: 1.5em;
+}
+
+/* ── Message boxes ────────────────────────────────────────── */
+
+.msg-success {
+  background: rgba(140, 209, 168, 0.15);
+  border: 1px solid rgba(140, 209, 168, 0.5);
+  color: #5a9972;
+  padding: 1em 1.25em;
+  border-radius: 4px;
+  margin-top: 1em;
+}
+
+.msg-error {
+  background: rgba(220, 80, 80, 0.1);
+  border: 1px solid rgba(220, 80, 80, 0.4);
+  color: #c05050;
+  padding: 1em 1.25em;
+  border-radius: 4px;
+  margin-top: 1em;
+}
+
+/* ── App pages (dashboard, admin, verify) ─────────────────── */
+
+body.app-page {
+  overflow-y: auto;
+}
+
+.app-nav {
+  background: rgba(49, 58, 61, 0.97);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 1em 2em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-nav .site-name {
+  color: #8cd1a8;
+  font-weight: 800;
+  font-size: 1.1em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: none;
+}
+
+.app-nav .site-name:hover {
+  color: #8cd1a8 !important;
+}
+
+.app-nav .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+
+.app-nav .nav-user {
+  font-size: 0.85em;
+  color: #9fa6a8;
+}
+
+.app-body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3em 2em;
+}
+
+.app-section {
+  background: rgba(255,255,255,0.97);
+  border-radius: 6px;
+  padding: 2em 2.5em;
+  margin-bottom: 2em;
+}
+
+.app-section h2 {
+  margin-bottom: 1.25em;
+  padding-bottom: 0.75em;
+  border-bottom: solid 1px #e8e8e8;
+}
+
+/* ── Status badges ────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  padding: 0.2em 0.65em;
+  border-radius: 3px;
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge-pending   { background: #fff3cd; color: #856404; }
+.badge-approved  { background: #d1e7dd; color: #0f5132; }
+.badge-denied    { background: #f8d7da; color: #842029; }
+.badge-cancelled { background: #e2e3e5; color: #41464b; }
+.badge-expired   { background: #ffe5d0; color: #7c4a03; }
+.badge-complete  { background: #cff4fc; color: #055160; }
+.badge-blocked   { background: #e8d5f5; color: #5a2d82; }
+
+/* ── Reservation cards (dashboard) ───────────────────────── */
+
+.res-card {
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 1.25em 1.5em;
+  margin-bottom: 1.25em;
+}
+
+.res-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5em;
+}
+
+.res-dates {
+  font-weight: 700;
+  color: #61686b;
+}
+
+.res-description {
+  color: #9fa6a8;
+  font-size: 0.9em;
+  margin-top: 0.4em;
+}
+
+.res-note {
+  margin-top: 0.75em;
+  padding: 0.6em 0.9em;
+  background: #f8f9fa;
+  border-left: 3px solid #8cd1a8;
+  font-size: 0.9em;
+  font-style: italic;
+  color: #61686b;
+}
+
+/* ── Admin table ──────────────────────────────────────────── */
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 0.6em 0.75em;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.8em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9fa6a8;
+}
+
+.admin-table td {
+  padding: 0.75em;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+
+.admin-table tr:hover td {
+  background: #fafafa;
+}
+
+.admin-table .user-name {
+  font-weight: 700;
+  color: #61686b;
+}
+
+.admin-table .user-email {
+  font-size: 0.85em;
+  color: #9fa6a8;
+}
+
+.status-form {
+  display: flex;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-top: 0.5em;
+}
+
+.status-form select {
+  font-size: 0.85em;
+  padding: 0.4em 0.6em;
+  height: auto;
+}
+
+.status-form textarea {
+  font-size: 0.85em;
+  padding: 0.4em 0.6em;
+  height: auto;
+  resize: vertical;
+  min-height: 2.5em;
+  flex: 1;
+  min-width: 150px;
+}
+
+.status-form button {
+  font-size: 0.8em;
+  padding: 0.5em 1em;
+  white-space: nowrap;
+}
+
+/* ── Verify page ──────────────────────────────────────────── */
+
+.verify-box {
+  max-width: 420px;
+  margin: 15vh auto;
+  background: rgba(255,255,255,0.97);
+  border-radius: 6px;
+  padding: 3em;
+  text-align: center;
+}
+
+.verify-box .spinner {
+  display: inline-block;
+  width: 2em;
+  height: 2em;
+  border: 3px solid rgba(140,209,168,0.3);
+  border-top-color: #8cd1a8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1em;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.verify-icon {
+  font-size: 2.5em;
+  margin-bottom: 0.5em;
+}
+
+/* ── Admin filter bar ─────────────────────────────────────── */
+
+.filter-bar {
+  display: flex;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  margin-bottom: 1.5em;
+}
+
+.filter-bar .button.active {
+  background-color: #8cd1a8;
+  color: #fff;
+  border-color: #8cd1a8;
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+
+.empty-state {
+  text-align: center;
+  padding: 3em 1em;
+  color: #9fa6a8;
+}
+
+.empty-state .empty-icon {
+  font-size: 2.5em;
+  margin-bottom: 0.5em;
+}

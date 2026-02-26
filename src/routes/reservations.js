@@ -12,7 +12,7 @@ router.get('/calendar', async (req, res) => {
     const result = await pool.query(
       `SELECT start_date, end_date
          FROM reservations
-        WHERE status = 'approved'
+        WHERE status IN ('approved', 'blocked')
         ORDER BY start_date ASC`
     );
     res.json(result.rows);

@@ -6,7 +6,7 @@ const { sendStatusUpdate } = require('../services/email');
 
 const router = express.Router();
 
-const ALLOWED_STATUSES = ['approved', 'denied', 'cancelled'];
+const ALLOWED_STATUSES = ['approved', 'denied', 'cancelled', 'blocked'];
 
 // GET /api/admin/reservations
 // Returns all reservations with user info
@@ -76,16 +76,48 @@ router.put('/reservations/:id', requireAuth, requireAdmin, async (req, res) => {
 
     const reservation = result.rows[0];
 
-    try {
-      await sendStatusUpdate(reservation.user_email, reservation, admin_note);
-    } catch (emailErr) {
-      console.error('Failed to send status update email:', emailErr.message);
+    if (status !== 'blocked') {
+      try {
+        await sendStatusUpdate(reservation.user_email, reservation, admin_note);
+      } catch (emailErr) {
+        console.error('Failed to send status update email:', emailErr.message);
+      }
     }
 
     res.json(reservation);
   } catch (err) {
     console.error('PUT /api/admin/reservations/:id error:', err);
     res.status(500).json({ error: 'Failed to update reservation' });
+  }
+});
+
+// POST /api/admin/blocks
+// Creates an admin-owned time block with status 'blocked'.
+// Blocked ranges appear as unavailable on the guest calendar.
+router.post('/blocks', requireAuth, requireAdmin, async (req, res) => {
+  const { start_date, end_date, note } = req.body;
+
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: 'start_date and end_date are required' });
+  }
+
+  const start = new Date(start_date);
+  const end   = new Date(end_date);
+  if (isNaN(start) || isNaN(end) || end <= start) {
+    return res.status(400).json({ error: 'end_date must be after start_date' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO reservations (user_id, start_date, end_date, description, status)
+         VALUES ($1, $2, $3, $4, 'blocked')
+         RETURNING id`,
+      [req.user.id, start_date, end_date, note || null]
+    );
+    res.status(201).json({ id: result.rows[0].id });
+  } catch (err) {
+    console.error('POST /api/admin/blocks error:', err);
+    res.status(500).json({ error: 'Failed to create block' });
   }
 });
 

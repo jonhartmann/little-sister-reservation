@@ -31,19 +31,26 @@ CREATE TABLE IF NOT EXISTS reservations (
   end_date    DATE NOT NULL,
   description TEXT,
   status      VARCHAR(20) DEFAULT 'pending'
-                CHECK (status IN ('pending','approved','denied','cancelled','expired','complete')),
+                CHECK (status IN ('pending','approved','denied','cancelled','expired','complete','blocked')),
   admin_note  TEXT,
   created_at  TIMESTAMP DEFAULT NOW(),
   updated_at  TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_reservations_calendar
+-- Migrate existing databases: drop old check constraint and recreate with 'blocked' added.
+-- The DROP/ADD pattern is idempotent — safe to run on every startup.
+ALTER TABLE reservations DROP CONSTRAINT IF EXISTS reservations_status_check;
+ALTER TABLE reservations ADD CONSTRAINT reservations_status_check
+  CHECK (status IN ('pending','approved','denied','cancelled','expired','complete','blocked'));
+
+-- Migrate existing databases: recreate calendar index to include 'blocked' dates.
+DROP INDEX IF EXISTS idx_reservations_calendar;
+CREATE INDEX idx_reservations_calendar
   ON reservations (start_date, end_date)
-  WHERE status = 'approved';
+  WHERE status IN ('approved', 'blocked');
 
 CREATE INDEX IF NOT EXISTS idx_reservations_status_end
   ON reservations (status, end_date);
 
 CREATE INDEX IF NOT EXISTS idx_sessions_token
-  ON sessions (token)
-  WHERE expires_at > NOW();
+  ON sessions (token);
