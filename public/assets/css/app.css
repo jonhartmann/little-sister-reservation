@@ -194,6 +194,10 @@ body.app-page {
   padding: 3em 2em;
 }
 
+.app-body--wide {
+  max-width: 1300px;
+}
+
 .app-section {
   background: rgba(255,255,255,0.97);
   border-radius: 6px;
@@ -304,16 +308,16 @@ body.app-page {
 
 .status-form {
   display: flex;
+  flex-direction: column;
   gap: 0.5em;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  margin-top: 0.5em;
+  min-width: 200px;
 }
 
 .status-form select {
   font-size: 0.85em;
   padding: 0.4em 0.6em;
   height: auto;
+  width: 100%;
 }
 
 .status-form textarea {
@@ -321,14 +325,14 @@ body.app-page {
   padding: 0.4em 0.6em;
   height: auto;
   resize: vertical;
-  min-height: 2.5em;
-  flex: 1;
-  min-width: 150px;
+  min-height: 3em;
+  width: 100%;
 }
 
 .status-form button {
   font-size: 0.8em;
   padding: 0.5em 1em;
+  align-self: flex-start;
   white-space: nowrap;
 }
 
