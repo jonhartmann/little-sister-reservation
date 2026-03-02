@@ -154,7 +154,7 @@
           ${fmtDate(r.start_date)}<br>
           <small style="color:#9fa6a8;">to ${fmtDate(r.end_date)}</small>
         </td>
-        <td style="max-width:200px;word-break:break-word;font-size:0.85em;">
+        <td style="word-break:break-word;font-size:0.85em;">
           ${r.description ? escapeHtml(r.description) : '<em style="color:#9fa6a8;">—</em>'}
           ${r.admin_note  ? `<div style="margin-top:0.4em;font-style:italic;color:#8cd1a8;">Note: ${escapeHtml(r.admin_note)}</div>` : ''}
         </td>
@@ -196,7 +196,8 @@
 })();
 
 function fmtDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
+  const [year, month, day] = String(dateStr).slice(0, 10).split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 

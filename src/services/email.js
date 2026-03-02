@@ -33,7 +33,8 @@ async function sendMagicLink(email, token) {
 }
 
 function fmtDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
+  const [year, month, day] = String(dateStr).slice(0, 10).split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 

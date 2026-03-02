@@ -78,6 +78,12 @@
   await loadReservations();
 })();
 
+function formatDate(dateStr) {
+  const [year, month, day] = String(dateStr).slice(0, 10).split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
