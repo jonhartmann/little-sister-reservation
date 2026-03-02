@@ -14,10 +14,15 @@ class ReservationCalendar {
 
   setBookedRanges(ranges) {
     this.bookedRanges = ranges.map(r => ({
-      start: new Date(r.start_date + 'T00:00:00'),
-      end:   new Date(r.end_date   + 'T00:00:00'),
+      start: this._parseDate(r.start_date),
+      end:   this._parseDate(r.end_date),
     }));
     this.render();
+  }
+
+  _parseDate(dateStr) {
+    const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d);
   }
 
   // ── Helpers ──────────────────────────────────────────────
