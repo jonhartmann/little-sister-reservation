@@ -18,8 +18,12 @@ A lightweight reservation system for Little Sister — a private guest house ADU
 2. Guest selects a check-in and check-out date range, enters their email, and optionally describes their visit.
 3. A magic sign-in link is emailed to them. They click it to authenticate and their reservation request is submitted as **pending**.
 4. Guest can also sign in without making a new reservation using the "Returning Guest" form — this creates an account if one doesn't exist yet.
-5. Once signed in, guests can view their reservation status and update their profile (first name, last name).
+5. Once signed in, guests can:
+   - View their reservation status and update their profile (first name, last name)
+   - Browse the availability calendar and submit additional reservation requests directly from the dashboard — no page navigation required
+   - Cancel a pending or approved reservation from the dashboard
 6. When the admin acts on their request, the guest receives an email notification.
+7. Approved guests receive a reminder email `CHECKIN_REMINDER_DAYS` days before check-in with address and arrival details.
 
 ---
 
@@ -31,10 +35,16 @@ Admins are identified by email address (configured via `ADMIN_EMAILS`). They sig
 
 Admins see all reservations in a table at `/admin.html`, filterable by status. For each pending or approved reservation, admins can:
 
-- **Approve** — confirms the reservation and sends the guest a confirmation email with property details
+- **Approve** — confirms the reservation and sends the guest a confirmation email with property details and any host note
 - **Deny** — rejects the request and notifies the guest
 - **Cancel** — cancels an approved reservation and notifies the guest
 - **Blocked entries** can be removed by clicking "Remove Block" (sets them to cancelled, no email sent)
+
+Admins receive an email alert at `ADMIN_EMAILS` whenever:
+- A new reservation request is submitted by a guest
+- A guest cancels their own reservation
+
+An iCal feed is available at `/api/reservations/ical` and can be subscribed to in Google Calendar, Apple Calendar, or any calendar app to keep availability in sync.
 
 ### Blocking Time
 
@@ -54,7 +64,7 @@ Admins can reserve date ranges for personal use, maintenance, or any other reaso
 | `complete` | Approved stay whose end date has passed |
 | `blocked` | Admin-created time block; not tied to a guest request |
 
-Expired and complete statuses are set automatically by a background scheduler that runs hourly.
+Expired and complete statuses are set automatically by a background scheduler that runs daily.
 
 ---
 
@@ -90,7 +100,9 @@ A background job (hourly) removes expired session tokens and auth tokens from th
 
 ## Email Notifications
 
-All email is sent via Mailjet. Guests receive emails for the following events:
+All email is sent via Mailjet.
+
+**Guest emails:**
 
 | Event | Subject |
 |-------|---------|
@@ -98,8 +110,16 @@ All email is sent via Mailjet. Guests receive emails for the following events:
 | Reservation approved | *Your Little Sister stay is confirmed!* |
 | Reservation denied | *About your Little Sister reservation request* |
 | Reservation cancelled | *Your Little Sister reservation has been cancelled* |
+| Check-in reminder (N days before) | *Your Little Sister stay starts in N days!* |
 
-The approval email includes property address, check-in/out times, and host contact info (configured via environment variables — see below).
+The approval email includes property address, check-in/out times, host contact info, and any note left by the admin — displayed in a highlighted callout box.
+
+**Host emails** (sent to all addresses in `ADMIN_EMAILS`):
+
+| Event | Subject |
+|-------|---------|
+| New reservation submitted by a guest | *New reservation request — [dates]* |
+| Guest cancels their own reservation | *Reservation cancelled — [dates]* |
 
 > **Spam notice:** Emails include a note asking guests to check their Spam folder, since the system sends from a small/new domain.
 >
@@ -129,6 +149,7 @@ Create a `.env` file in the project root. All variables are required unless mark
 | `PORT` | `3000` | Port the server listens on |
 | `NODE_ENV` | — | Set to `production` to enable secure cookies |
 | `MAILJET_FROM_NAME` | — | Display name for outgoing emails |
+| `CHECKIN_REMINDER_DAYS` | `3` | Days before check-in to send the guest a reminder email |
 
 ### Optional — Property Details (used in approval emails)
 
@@ -193,7 +214,7 @@ little-sister-reservation/
 │       │   ├── main.css         # Base theme (HTML5 UP Phantom)
 │       │   └── app.css          # App-specific styles
 │       └── js/
-│           ├── api.js           # Fetch wrapper (API.get/post/put)
+│           ├── api.js           # Fetch wrapper (API.get/post/put/patch)
 │           ├── calendar.js      # Interactive availability calendar
 │           ├── home.js          # Homepage logic
 │           ├── dashboard.js     # Guest dashboard logic
@@ -211,8 +232,8 @@ little-sister-reservation/
     │   ├── profile.js           # /api/profile — get/update current user
     │   └── admin.js             # /api/admin/* — reservation management, time blocks
     └── services/
-        ├── email.js             # Mailjet integration: magic links + status emails
-        └── scheduler.js         # Hourly job: expire pending, complete approved
+        ├── email.js             # Mailjet integration: all outgoing emails
+        └── scheduler.js         # Daily jobs: expire/complete reservations, send check-in reminders
 ```
 
 ---
