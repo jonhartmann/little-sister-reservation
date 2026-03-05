@@ -8,12 +8,13 @@ const router = express.Router();
 
 // GET /api/reservations/calendar
 // Public: returns approved reservations as date ranges (no PII)
-router.get('/calendar', async (req, res) => {
+router.get('/calendar', async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT start_date, end_date
          FROM reservations
         WHERE status IN ('approved', 'blocked')
+          AND end_date >= CURRENT_DATE
         ORDER BY start_date ASC`
     );
     res.json(result.rows);
@@ -25,7 +26,7 @@ router.get('/calendar', async (req, res) => {
 
 // GET /api/reservations/ical
 // Public: returns all approved+blocked reservations as an iCal (.ics) feed
-router.get('/ical', async (req, res) => {
+router.get('/ical', async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, start_date, end_date

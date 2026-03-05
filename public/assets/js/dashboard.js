@@ -299,9 +299,3 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-function showMessage(id, text, type) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = `<div class="msg-${type}">${text}</div>`;
-}

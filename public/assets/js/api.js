@@ -27,7 +27,7 @@ function showMessage(containerId, text, type) {
 }
 
 function formatDate(dateStr) {
-  // dateStr is "YYYY-MM-DD" or a Date ISO string
-  const d = new Date(dateStr + (dateStr.length === 10 ? 'T00:00:00' : ''));
+  const [year, month, day] = String(dateStr).slice(0, 10).split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
 }
