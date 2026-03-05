@@ -4,6 +4,7 @@
 class ReservationCalendar {
   constructor({ onRangeSelect, onError }) {
     this.bookedRanges = [];
+    this.ownRanges    = [];
     this.selectedStart = null;
     this.selectedEnd   = null;
     this.viewYear  = new Date().getFullYear();
@@ -14,6 +15,14 @@ class ReservationCalendar {
 
   setBookedRanges(ranges) {
     this.bookedRanges = ranges.map(r => ({
+      start: this._parseDate(r.start_date),
+      end:   this._parseDate(r.end_date),
+    }));
+    this.render();
+  }
+
+  setOwnRanges(ranges) {
+    this.ownRanges = ranges.map(r => ({
       start: this._parseDate(r.start_date),
       end:   this._parseDate(r.end_date),
     }));
@@ -37,8 +46,13 @@ class ReservationCalendar {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
+  _isOwn(date) {
+    return this.ownRanges.some(r => date >= r.start && date <= r.end);
+  }
+
   _isBooked(date) {
-    return this.bookedRanges.some(r => date >= r.start && date <= r.end);
+    return this.bookedRanges.some(r => date >= r.start && date <= r.end)
+        || this._isOwn(date);
   }
 
   _rangeOverlapsBooked(start, end) {
@@ -120,7 +134,8 @@ class ReservationCalendar {
     for (let day = 1; day <= daysInMonth; day++) {
       const date    = new Date(year, month, day);
       const dateKey = this._dateKey(date);
-      const booked  = this._isBooked(date);
+      const own     = this._isOwn(date);
+      const booked  = !own && this._isBooked(date);
       const past    = date < today;
       const isToday = date.getTime() === today.getTime();
 
@@ -129,7 +144,8 @@ class ReservationCalendar {
       const inRange    = this._isInSelectedRange(date);
 
       let cls = 'cal-day';
-      if (booked)             cls += ' booked';
+      if (own)                cls += ' own-booking';
+      else if (booked)        cls += ' booked';
       else if (past)          cls += ' past';
       if (isToday)            cls += ' today';
       if (isStart || isEnd)   cls += ' selected-endpoint';
