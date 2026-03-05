@@ -162,4 +162,54 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/reservations/:id/dates
+// Auth required: guest requests new dates on their own pending reservation
+router.patch('/:id/dates', requireAuth, async (req, res) => {
+  const reservationId = parseInt(req.params.id, 10);
+  if (isNaN(reservationId)) {
+    return res.status(400).json({ error: 'Invalid reservation ID' });
+  }
+
+  const { start_date, end_date } = req.body;
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: 'start_date and end_date are required' });
+  }
+  if (start_date >= end_date) {
+    return res.status(400).json({ error: 'end_date must be after start_date' });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE reservations
+          SET start_date = $1, end_date = $2, updated_at = NOW()
+        WHERE id = $3
+          AND user_id = $4
+          AND status = 'pending'
+        RETURNING id, start_date, end_date, status`,
+      [start_date, end_date, reservationId, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Reservation not found or cannot be changed' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('PATCH /api/reservations/:id/dates error:', err);
+    res.status(500).json({ error: 'Failed to update reservation dates' });
+  }
+});
+
+// GET /api/property-info
+// Public: returns property details from env vars (no PII)
+router.get('/property-info', async (_req, res) => {
+  res.json({
+    address:       process.env.PROPERTY_ADDRESS      || null,
+    checkin_time:  process.env.PROPERTY_CHECKIN_TIME  || null,
+    checkout_time: process.env.PROPERTY_CHECKOUT_TIME || null,
+    contact_name:  process.env.PROPERTY_CONTACT_NAME  || null,
+    contact_phone: process.env.PROPERTY_CONTACT_PHONE || null,
+  });
+});
+
 module.exports = router;

@@ -12,6 +12,7 @@ const authRoutes        = require('./src/routes/auth');
 const reservationRoutes = require('./src/routes/reservations');
 const profileRoutes     = require('./src/routes/profile');
 const adminRoutes       = require('./src/routes/admin');
+const contactRoutes     = require('./src/routes/contact');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ app.use('/api/auth',         authRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/profile',      profileRoutes);
 app.use('/api/admin',        adminRoutes);
+app.use('/api/contact',      contactRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

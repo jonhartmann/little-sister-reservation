@@ -55,6 +55,11 @@
 			</div>
 			<div id="calendar-container"></div>
 			<div id="cal-status"></div>
+			<div class="cal-legend">
+				<span class="cal-legend-item"><span class="cal-legend-swatch swatch-own"></span> Your reservation</span>
+				<span class="cal-legend-item"><span class="cal-legend-swatch swatch-booked"></span> Unavailable</span>
+				<span class="cal-legend-item"><span class="cal-legend-swatch swatch-available"></span> Available</span>
+			</div>
 
 			<!-- Booking form — shown after date range is selected -->
 			<div id="booking-form" style="display:none; margin-top:1.5em;">
@@ -86,6 +91,25 @@
 					<p>Loading your reservations&hellip;</p>
 				</div>
 			</div>
+		</div>
+
+		<!-- Message the Host -->
+		<div class="app-section">
+			<h2>Message the Host</h2>
+			<p>Have a question? Send us a message and we'll get back to you.</p>
+			<form id="form-contact">
+				<div class="row gtr-uniform">
+					<div class="col-12">
+						<textarea id="contact-message" placeholder="Your message…" rows="4" maxlength="1000"></textarea>
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><button type="submit" class="button primary small">Send Message</button></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+			<div id="contact-message-status"></div>
 		</div>
 
 	</div>

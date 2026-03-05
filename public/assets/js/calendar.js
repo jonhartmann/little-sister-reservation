@@ -151,7 +151,7 @@ class ReservationCalendar {
       if (isStart || isEnd)   cls += ' selected-endpoint';
       else if (inRange)       cls += ' in-range';
 
-      const interactive = !booked && !past;
+      const interactive = !own && !booked && !past;
       html += `<div class="${cls}"${interactive ? ` data-date="${dateKey}"` : ''}>${day}</div>`;
     }
 
@@ -188,18 +188,21 @@ class ReservationCalendar {
       el.addEventListener('click', () => this._handleDayClick(el.dataset.date));
     });
 
-    document.getElementById('cal-prev')?.addEventListener('click', () => {
+    const prevBtn = document.getElementById('cal-prev');
+    const nextBtn = document.getElementById('cal-next');
+
+    if (prevBtn) prevBtn.onclick = () => {
       const d = new Date(this.viewYear, this.viewMonth - 1, 1);
       this.viewYear  = d.getFullYear();
       this.viewMonth = d.getMonth();
       this.render();
-    });
+    };
 
-    document.getElementById('cal-next')?.addEventListener('click', () => {
+    if (nextBtn) nextBtn.onclick = () => {
       const d = new Date(this.viewYear, this.viewMonth + 1, 1);
       this.viewYear  = d.getFullYear();
       this.viewMonth = d.getMonth();
       this.render();
-    });
+    };
   }
 }

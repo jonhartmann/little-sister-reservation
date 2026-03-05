@@ -309,4 +309,51 @@ async function sendNewReservationAlert(reservation, guest) {
   });
 }
 
-module.exports = { sendMagicLink, sendStatusUpdate, sendCheckinReminder, sendNewReservationAlert, sendGuestCancellationAlert };
+async function sendGuestMessage(guest, message) {
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  if (!adminEmails.length) return;
+
+  const guestName = [guest.first_name, guest.last_name].filter(Boolean).join(' ') || guest.email;
+
+  await getClient().post('send', { version: 'v3.1' }).request({
+    Messages: [{
+      From: {
+        Email: process.env.MAILJET_FROM_EMAIL,
+        Name:  process.env.MAILJET_FROM_NAME,
+      },
+      To: adminEmails.map(e => ({ Email: e })),
+      ReplyTo: { Email: guest.email, Name: guestName },
+      Subject: `Message from guest: ${guestName}`,
+      TextPart: `${guestName} (${guest.email}) sent a message:\n\n${message}\n\nReply directly to this email to respond.`,
+      HTMLPart: `
+        <h2>Message from Guest</h2>
+        <p><strong>${guestName}</strong> (${guest.email}) sent you a message:</p>
+        <blockquote style="border-left:3px solid #8cd1a8;margin:1em 0;padding:0.75em 1em;background:#f0f7f4;border-radius:0 4px 4px 0;">
+          ${escapeHtmlEmail(message)}
+        </blockquote>
+        <p style="font-size:0.9em;color:#9fa6a8;">Reply directly to this email to respond to the guest.</p>
+      `,
+    }],
+  });
+}
+
+function escapeHtmlEmail(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+module.exports = {
+  sendMagicLink,
+  sendStatusUpdate,
+  sendCheckinReminder,
+  sendNewReservationAlert,
+  sendGuestCancellationAlert,
+  sendGuestMessage,
+};
