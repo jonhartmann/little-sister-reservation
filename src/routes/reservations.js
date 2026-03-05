@@ -23,6 +23,60 @@ router.get('/calendar', async (req, res) => {
   }
 });
 
+// GET /api/reservations/ical
+// Public: returns all approved+blocked reservations as an iCal (.ics) feed
+router.get('/ical', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, start_date, end_date
+         FROM reservations
+        WHERE status IN ('approved', 'blocked')
+        ORDER BY start_date ASC`
+    );
+
+    const fmt = (dateStr) => {
+      // Format as YYYYMMDD for iCal DATE values
+      return String(dateStr).slice(0, 10).replace(/-/g, '');
+    };
+
+    const addDays = (dateStr, n) => {
+      const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number);
+      const dt = new Date(y, m - 1, d + n);
+      return [
+        dt.getFullYear(),
+        String(dt.getMonth() + 1).padStart(2, '0'),
+        String(dt.getDate()).padStart(2, '0'),
+      ].join('');
+    };
+
+    const events = result.rows.map(r => [
+      'BEGIN:VEVENT',
+      `UID:reservation-${r.id}@little-sister`,
+      `DTSTART;VALUE=DATE:${fmt(r.start_date)}`,
+      `DTEND;VALUE=DATE:${addDays(r.end_date, 1)}`,
+      'SUMMARY:Little Sister — Reserved',
+      'END:VEVENT',
+    ].join('\r\n')).join('\r\n');
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Little Sister//Reservation Calendar//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      events,
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'inline; filename="little-sister.ics"');
+    res.send(ics);
+  } catch (err) {
+    console.error('GET /api/reservations/ical error:', err);
+    res.status(500).send('Failed to generate calendar');
+  }
+});
+
 // GET /api/reservations/mine
 // Auth required: returns current user's reservations with status
 router.get('/mine', requireAuth, async (req, res) => {
