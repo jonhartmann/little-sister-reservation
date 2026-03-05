@@ -137,7 +137,7 @@
             <option value="denied">Denied</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <textarea name="note" placeholder="Optional note for guest…"></textarea>
+          <textarea name="note" placeholder="Note to guest (included in status update email)"></textarea>
           <button type="submit" class="button primary small">Save</button>
         </form>`;
     } else {

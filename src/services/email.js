@@ -49,8 +49,10 @@ function buildStatusEmail(reservation, adminNote) {
   const contact = process.env.PROPERTY_CONTACT_NAME  || '[Host name TBD]';
   const phone   = process.env.PROPERTY_CONTACT_PHONE || '[Phone TBD]';
 
-  const noteText = adminNote ? `Note from host: ${adminNote}\n\n` : '';
-  const noteHtml = adminNote ? `<p><strong>Note from host:</strong> ${adminNote}</p>` : '';
+  const noteText = adminNote ? `Note from host:\n${adminNote}\n\n` : '';
+  const noteHtml = adminNote
+    ? `<div style="background:#f0f7f4;border-left:3px solid #8cd1a8;padding:12px 16px;margin:1.5em 0;border-radius:0 4px 4px 0;"><strong>Note from host:</strong><br>${adminNote}</div>`
+    : '';
 
   if (reservation.status === 'approved') {
     return {
