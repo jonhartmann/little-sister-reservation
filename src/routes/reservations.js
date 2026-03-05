@@ -2,7 +2,7 @@
 const express = require('express');
 const { pool } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { sendNewReservationAlert } = require('../services/email');
+const { sendNewReservationAlert, sendGuestCancellationAlert } = require('../services/email');
 
 const router = express.Router();
 
@@ -124,6 +124,41 @@ router.post('/', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('POST /api/reservations error:', err);
     res.status(500).json({ error: 'Failed to create reservation' });
+  }
+});
+
+// PATCH /api/reservations/:id/cancel
+// Auth required: guest cancels their own pending or approved reservation
+router.patch('/:id/cancel', requireAuth, async (req, res) => {
+  const reservationId = parseInt(req.params.id, 10);
+  if (isNaN(reservationId)) {
+    return res.status(400).json({ error: 'Invalid reservation ID' });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE reservations
+          SET status = 'cancelled', updated_at = NOW()
+        WHERE id = $1
+          AND user_id = $2
+          AND status IN ('pending', 'approved')
+        RETURNING id, start_date, end_date, status`,
+      [reservationId, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Reservation not found or cannot be cancelled' });
+    }
+
+    res.json(result.rows[0]);
+
+    // Notify host — fire-and-forget
+    sendGuestCancellationAlert(result.rows[0], req.user).catch(err =>
+      console.error('Failed to send cancellation alert:', err.message)
+    );
+  } catch (err) {
+    console.error('PATCH /api/reservations/:id/cancel error:', err);
+    res.status(500).json({ error: 'Failed to cancel reservation' });
   }
 });
 

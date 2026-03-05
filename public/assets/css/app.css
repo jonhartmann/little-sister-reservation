@@ -71,6 +71,14 @@
   text-decoration: line-through;
 }
 
+.cal-day.own-booking {
+  background-color: rgba(140, 209, 168, 0.2);
+  color: #3a7a58;
+  cursor: not-allowed;
+  font-weight: 700;
+  border: 1px solid rgba(140, 209, 168, 0.5);
+}
+
 .cal-day.past {
   opacity: 0.3;
   cursor: not-allowed;
@@ -256,6 +264,12 @@ body.app-page {
   color: #9fa6a8;
   font-size: 0.9em;
   margin-top: 0.4em;
+}
+
+.res-card-actions {
+  margin-top: 0.75em;
+  padding-top: 0.75em;
+  border-top: 1px solid #f0f0f0;
 }
 
 .res-note {

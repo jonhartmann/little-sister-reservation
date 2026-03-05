@@ -212,6 +212,51 @@ async function sendCheckinReminder(email, firstName, reservation) {
   });
 }
 
+async function sendGuestCancellationAlert(reservation, guest) {
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  if (!adminEmails.length) return;
+
+  const start = fmtDate(reservation.start_date);
+  const end   = fmtDate(reservation.end_date);
+  const guestName = [guest.first_name, guest.last_name].filter(Boolean).join(' ') || guest.email;
+  const adminUrl  = `${process.env.BASE_URL}/admin.html`;
+
+  await getClient().post('send', { version: 'v3.1' }).request({
+    Messages: [{
+      From: {
+        Email: process.env.MAILJET_FROM_EMAIL,
+        Name:  process.env.MAILJET_FROM_NAME,
+      },
+      To: adminEmails.map(e => ({ Email: e })),
+      Subject: `Reservation cancelled — ${start} → ${end}`,
+      TextPart: `A guest has cancelled their reservation.\n\nGuest: ${guestName} (${guest.email})\nDates: ${start} → ${end}\n\nView in admin: ${adminUrl}`,
+      HTMLPart: `
+        <h2>Reservation Cancelled</h2>
+        <p>A guest has cancelled their reservation.</p>
+        <table style="border-collapse:collapse;width:100%;margin:1em 0;">
+          <tr>
+            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Guest</td>
+            <td style="padding:0.4em 0;font-weight:700;">${guestName}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Email</td>
+            <td style="padding:0.4em 0;">${guest.email}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Dates</td>
+            <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
+          </tr>
+        </table>
+        <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">View in Admin</a></p>
+      `,
+    }],
+  });
+}
+
 async function sendNewReservationAlert(reservation, guest) {
   const adminEmails = (process.env.ADMIN_EMAILS || '')
     .split(',')
@@ -262,4 +307,4 @@ async function sendNewReservationAlert(reservation, guest) {
   });
 }
 
-module.exports = { sendMagicLink, sendStatusUpdate, sendCheckinReminder, sendNewReservationAlert };
+module.exports = { sendMagicLink, sendStatusUpdate, sendCheckinReminder, sendNewReservationAlert, sendGuestCancellationAlert };

@@ -14,9 +14,10 @@ const API = {
     if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;
   },
-  get:  (path)        => API.request('GET',  path),
-  post: (path, body)  => API.request('POST', path, body),
-  put:  (path, body)  => API.request('PUT',  path, body),
+  get:    (path)       => API.request('GET',    path),
+  post:   (path, body) => API.request('POST',   path, body),
+  put:    (path, body) => API.request('PUT',    path, body),
+  patch:  (path, body) => API.request('PATCH',  path, body),
 };
 
 function showMessage(containerId, text, type) {
