@@ -152,4 +152,54 @@ async function sendStatusUpdate(email, reservation, adminNote) {
   });
 }
 
-module.exports = { sendMagicLink, sendStatusUpdate };
+async function sendNewReservationAlert(reservation, guest) {
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  if (!adminEmails.length) return;
+
+  const start = fmtDate(reservation.start_date);
+  const end   = fmtDate(reservation.end_date);
+  const guestName = [guest.first_name, guest.last_name].filter(Boolean).join(' ') || guest.email;
+  const adminUrl  = `${process.env.BASE_URL}/admin.html`;
+
+  const descText = reservation.description ? `\n\nGuest note: ${reservation.description}` : '';
+  const descHtml = reservation.description
+    ? `<p style="color:#555;font-style:italic;">${reservation.description}</p>`
+    : '';
+
+  await getClient().post('send', { version: 'v3.1' }).request({
+    Messages: [{
+      From: {
+        Email: process.env.MAILJET_FROM_EMAIL,
+        Name:  process.env.MAILJET_FROM_NAME,
+      },
+      To: adminEmails.map(e => ({ Email: e })),
+      Subject: `New reservation request — ${start} → ${end}`,
+      TextPart: `A new reservation request has been submitted.\n\nGuest: ${guestName} (${guest.email})\nDates: ${start} → ${end}${descText}\n\nReview and respond: ${adminUrl}`,
+      HTMLPart: `
+        <h2>New Reservation Request</h2>
+        <table style="border-collapse:collapse;width:100%;margin:1em 0;">
+          <tr>
+            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Guest</td>
+            <td style="padding:0.4em 0;font-weight:700;">${guestName}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Email</td>
+            <td style="padding:0.4em 0;">${guest.email}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Dates</td>
+            <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
+          </tr>
+        </table>
+        ${descHtml}
+        <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">Review in Admin</a></p>
+      `,
+    }],
+  });
+}
+
+module.exports = { sendMagicLink, sendStatusUpdate, sendNewReservationAlert };

@@ -2,6 +2,7 @@
 const express = require('express');
 const { pool } = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { sendNewReservationAlert } = require('../services/email');
 
 const router = express.Router();
 
@@ -37,6 +38,38 @@ router.get('/mine', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('GET /api/reservations/mine error:', err);
     res.status(500).json({ error: 'Failed to fetch reservations' });
+  }
+});
+
+// POST /api/reservations
+// Auth required: create a new reservation for the signed-in user
+router.post('/', requireAuth, async (req, res) => {
+  const { start_date, end_date, description } = req.body;
+
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: 'start_date and end_date are required' });
+  }
+  if (start_date >= end_date) {
+    return res.status(400).json({ error: 'end_date must be after start_date' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO reservations (user_id, start_date, end_date, description, status)
+       VALUES ($1, $2, $3, $4, 'pending')
+       RETURNING id, start_date, end_date, description, status, created_at`,
+      [req.user.id, start_date, end_date, description || null]
+    );
+    const reservation = result.rows[0];
+    res.status(201).json(reservation);
+
+    // Notify host — fire-and-forget, don't block the response
+    sendNewReservationAlert(reservation, req.user).catch(err =>
+      console.error('Failed to send new reservation alert:', err.message)
+    );
+  } catch (err) {
+    console.error('POST /api/reservations error:', err);
+    res.status(500).json({ error: 'Failed to create reservation' });
   }
 });
 
