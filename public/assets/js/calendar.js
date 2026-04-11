@@ -2,7 +2,7 @@
 'use strict';
 
 class ReservationCalendar {
-  constructor({ onRangeSelect, onError }) {
+  constructor({ onRangeSelect, onError, containerId, prevBtnId, nextBtnId, labelId, readOnly } = {}) {
     this.bookedRanges = [];
     this.selectedStart = null;
     this.selectedEnd   = null;
@@ -10,12 +10,18 @@ class ReservationCalendar {
     this.viewMonth = new Date().getMonth(); // current month
     this.onRangeSelect = onRangeSelect || (() => {});
     this.onError       = onError       || (() => {});
+    this.containerId   = containerId   || 'calendar-container';
+    this.prevBtnId     = prevBtnId     || 'cal-prev';
+    this.nextBtnId     = nextBtnId     || 'cal-next';
+    this.labelId       = labelId       || 'cal-month-label';
+    this.readOnly      = !!readOnly;
   }
 
   setBookedRanges(ranges) {
     this.bookedRanges = ranges.map(r => ({
-      start: this._parseDate(r.start_date),
-      end:   this._parseDate(r.end_date),
+      start:  this._parseDate(r.start_date),
+      end:    this._parseDate(r.end_date),
+      status: r.status || null,
     }));
     this.render();
   }
@@ -37,8 +43,12 @@ class ReservationCalendar {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
+  _getBookedRange(date) {
+    return this.bookedRanges.find(r => date >= r.start && date <= r.end) || null;
+  }
+
   _isBooked(date) {
-    return this.bookedRanges.some(r => date >= r.start && date <= r.end);
+    return !!this._getBookedRange(date);
   }
 
   _rangeOverlapsBooked(start, end) {
@@ -118,24 +128,38 @@ class ReservationCalendar {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const date    = new Date(year, month, day);
-      const dateKey = this._dateKey(date);
-      const booked  = this._isBooked(date);
-      const past    = date < today;
-      const isToday = date.getTime() === today.getTime();
+      const date      = new Date(year, month, day);
+      const dateKey   = this._dateKey(date);
+      const bookedRange = this._getBookedRange(date);
+      const booked    = !!bookedRange;
+      const past      = date < today;
+      const isToday   = date.getTime() === today.getTime();
 
-      const isStart    = this.selectedStart && date.getTime() === this.selectedStart.getTime();
-      const isEnd      = this.selectedEnd   && date.getTime() === this.selectedEnd.getTime();
-      const inRange    = this._isInSelectedRange(date);
+      const isStart = this.selectedStart && date.getTime() === this.selectedStart.getTime();
+      const isEnd   = this.selectedEnd   && date.getTime() === this.selectedEnd.getTime();
+      const inRange = this._isInSelectedRange(date);
 
       let cls = 'cal-day';
-      if (booked)             cls += ' booked';
-      else if (past)          cls += ' past';
-      if (isToday)            cls += ' today';
-      if (isStart || isEnd)   cls += ' selected-endpoint';
-      else if (inRange)       cls += ' in-range';
 
-      const interactive = !booked && !past;
+      if (booked) {
+        if (this.readOnly && bookedRange.status) {
+          cls += ` cal-day--${bookedRange.status}`;
+          if (past) cls += ' past';
+        } else {
+          cls += ' booked';
+        }
+      } else if (past) {
+        cls += ' past';
+      }
+
+      if (isToday) cls += ' today';
+
+      if (!this.readOnly) {
+        if (isStart || isEnd) cls += ' selected-endpoint';
+        else if (inRange)     cls += ' in-range';
+      }
+
+      const interactive = !this.readOnly && !booked && !past;
       html += `<div class="${cls}"${interactive ? ` data-date="${dateKey}"` : ''}>${day}</div>`;
     }
 
@@ -144,8 +168,8 @@ class ReservationCalendar {
   }
 
   render() {
-    const container = document.getElementById('calendar-container');
-    const label     = document.getElementById('cal-month-label');
+    const container = document.getElementById(this.containerId);
+    const label     = document.getElementById(this.labelId);
     if (!container) return;
 
     const MONTHS = ['January','February','March','April','May','June',
@@ -162,24 +186,33 @@ class ReservationCalendar {
     html += this._renderMonth(y2, m2);
     html += `</div>`;
 
-    if (this.selectedStart && !this.selectedEnd) {
+    if (!this.readOnly && this.selectedStart && !this.selectedEnd) {
       html += `<p class="cal-hint">Now click your check-out date.</p>`;
     }
 
     container.innerHTML = html;
 
-    container.querySelectorAll('.cal-day[data-date]').forEach(el => {
-      el.addEventListener('click', () => this._handleDayClick(el.dataset.date));
-    });
+    if (!this.readOnly) {
+      container.querySelectorAll('.cal-day[data-date]').forEach(el => {
+        el.addEventListener('click', () => this._handleDayClick(el.dataset.date));
+      });
+    }
 
-    document.getElementById('cal-prev')?.addEventListener('click', () => {
+    this._bindNav();
+  }
+
+  _bindNav() {
+    if (this._navBound) return;
+    this._navBound = true;
+
+    document.getElementById(this.prevBtnId)?.addEventListener('click', () => {
       const d = new Date(this.viewYear, this.viewMonth - 1, 1);
       this.viewYear  = d.getFullYear();
       this.viewMonth = d.getMonth();
       this.render();
     });
 
-    document.getElementById('cal-next')?.addEventListener('click', () => {
+    document.getElementById(this.nextBtnId)?.addEventListener('click', () => {
       const d = new Date(this.viewYear, this.viewMonth + 1, 1);
       this.viewYear  = d.getFullYear();
       this.viewMonth = d.getMonth();

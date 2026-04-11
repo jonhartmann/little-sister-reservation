@@ -152,4 +152,49 @@ async function sendStatusUpdate(email, reservation, adminNote) {
   });
 }
 
-module.exports = { sendMagicLink, sendStatusUpdate };
+async function sendAdminNewRequest(reservation, guestEmail) {
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  if (!adminEmails.length) return;
+
+  const start = fmtDate(reservation.start_date);
+  const end   = fmtDate(reservation.end_date);
+  const adminUrl = `${process.env.BASE_URL}/admin.html`;
+  const noteText = reservation.description ? `\n\nMessage from guest:\n${reservation.description}` : '';
+  const noteHtml = reservation.description
+    ? `<p><strong>Message from guest:</strong> ${reservation.description}</p>`
+    : '';
+
+  await getClient().post('send', { version: 'v3.1' }).request({
+    Messages: [{
+      From: {
+        Email: process.env.MAILJET_FROM_EMAIL,
+        Name: process.env.MAILJET_FROM_NAME,
+      },
+      To: adminEmails.map(e => ({ Email: e })),
+      Subject: `New reservation request: ${start} → ${end}`,
+      TextPart: `A new reservation request has been submitted.\n\nGuest: ${guestEmail}\nDates: ${start} → ${end}${noteText}\n\nReview it here: ${adminUrl}`,
+      HTMLPart: `
+        <h2>New Reservation Request</h2>
+        <p>A new reservation request has been submitted.</p>
+        <table style="border-collapse:collapse;width:100%;margin:1.5em 0;">
+          <tr>
+            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Guest</td>
+            <td style="padding:0.5em 0;">${guestEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Dates</td>
+            <td style="padding:0.5em 0;font-weight:700;">${start} &rarr; ${end}</td>
+          </tr>
+        </table>
+        ${noteHtml}
+        <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">Review Request</a></p>
+      `,
+    }],
+  });
+}
+
+module.exports = { sendMagicLink, sendStatusUpdate, sendAdminNewRequest };
