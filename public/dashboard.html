@@ -43,6 +43,45 @@
 			<div id="profile-message"></div>
 		</div>
 
+		<!-- Book a Stay -->
+		<div class="app-section">
+			<h2>Book a Stay</h2>
+			<p>Select your check-in and check-out dates. Greyed dates are already reserved.</p>
+
+			<div class="cal-nav">
+				<button class="button small" id="cal-prev">&#8592; Previous</button>
+				<span id="cal-month-label" style="font-weight:800;letter-spacing:0.05em;text-transform:uppercase;font-size:0.85em;color:#61686b;"></span>
+				<button class="button small" id="cal-next">Next &#8594;</button>
+			</div>
+			<div id="calendar-container"></div>
+			<div id="cal-status"></div>
+			<div class="cal-legend">
+				<span class="cal-legend-item"><span class="cal-legend-swatch swatch-own"></span> Your reservation</span>
+				<span class="cal-legend-item"><span class="cal-legend-swatch swatch-booked"></span> Unavailable</span>
+				<span class="cal-legend-item"><span class="cal-legend-swatch swatch-available"></span> Available</span>
+			</div>
+
+			<!-- Booking form — shown after date range is selected -->
+			<div id="booking-form" style="display:none; margin-top:1.5em;">
+				<h3>Request Your Stay</h3>
+				<p id="booking-dates-display"></p>
+				<form id="form-booking">
+					<div class="row gtr-uniform">
+						<div class="col-12">
+							<textarea id="booking-description" placeholder="Tell us about your visit — who's coming, how you heard about us, etc." rows="4"></textarea>
+						</div>
+						<div class="col-12">
+							<ul class="actions">
+								<li><button type="submit" class="button primary small">Request Reservation</button></li>
+								<li><button type="button" class="button small" id="btn-clear-dates">Clear Dates</button></li>
+							</ul>
+						</div>
+					</div>
+				</form>
+				<div id="booking-message"></div>
+			</div>
+		</div>
+
 		<!-- Reservations -->
 		<div class="app-section">
 			<h2>My Reservations</h2>
@@ -54,9 +93,29 @@
 			</div>
 		</div>
 
+		<!-- Message the Host -->
+		<div class="app-section">
+			<h2>Message the Host</h2>
+			<p>Have a question? Send us a message and we'll get back to you.</p>
+			<form id="form-contact">
+				<div class="row gtr-uniform">
+					<div class="col-12">
+						<textarea id="contact-message" placeholder="Your message…" rows="4" maxlength="1000"></textarea>
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><button type="submit" class="button primary small">Send Message</button></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+			<div id="contact-message-status"></div>
+		</div>
+
 	</div>
 
 	<script src="assets/js/api.js"></script>
+	<script src="assets/js/calendar.js"></script>
 	<script src="assets/js/dashboard.js"></script>
 
 </body>

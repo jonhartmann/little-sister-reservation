@@ -4,6 +4,7 @@
 class ReservationCalendar {
   constructor({ onRangeSelect, onError, containerId, prevBtnId, nextBtnId, labelId, readOnly } = {}) {
     this.bookedRanges = [];
+    this.ownRanges    = [];
     this.selectedStart = null;
     this.selectedEnd   = null;
     this.viewYear  = new Date().getFullYear();
@@ -22,6 +23,14 @@ class ReservationCalendar {
       start:  this._parseDate(r.start_date),
       end:    this._parseDate(r.end_date),
       status: r.status || null,
+    }));
+    this.render();
+  }
+
+  setOwnRanges(ranges) {
+    this.ownRanges = ranges.map(r => ({
+      start: this._parseDate(r.start_date),
+      end:   this._parseDate(r.end_date),
     }));
     this.render();
   }
@@ -47,8 +56,12 @@ class ReservationCalendar {
     return this.bookedRanges.find(r => date >= r.start && date <= r.end) || null;
   }
 
+  _isOwn(date) {
+    return this.ownRanges.some(r => date >= r.start && date <= r.end);
+  }
+
   _isBooked(date) {
-    return !!this._getBookedRange(date);
+    return !!this._getBookedRange(date) || this._isOwn(date);
   }
 
   _rangeOverlapsBooked(start, end) {
@@ -128,12 +141,13 @@ class ReservationCalendar {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const date      = new Date(year, month, day);
-      const dateKey   = this._dateKey(date);
-      const bookedRange = this._getBookedRange(date);
-      const booked    = !!bookedRange;
-      const past      = date < today;
-      const isToday   = date.getTime() === today.getTime();
+      const date        = new Date(year, month, day);
+      const dateKey     = this._dateKey(date);
+      const own         = this._isOwn(date);
+      const bookedRange = own ? null : this._getBookedRange(date);
+      const booked      = !own && !!bookedRange;
+      const past        = date < today;
+      const isToday     = date.getTime() === today.getTime();
 
       const isStart = this.selectedStart && date.getTime() === this.selectedStart.getTime();
       const isEnd   = this.selectedEnd   && date.getTime() === this.selectedEnd.getTime();
@@ -141,7 +155,9 @@ class ReservationCalendar {
 
       let cls = 'cal-day';
 
-      if (booked) {
+      if (own) {
+        cls += ' own-booking';
+      } else if (booked) {
         if (this.readOnly && bookedRange.status) {
           cls += ` cal-day--${bookedRange.status}`;
           if (past) cls += ' past';
@@ -159,7 +175,7 @@ class ReservationCalendar {
         else if (inRange)     cls += ' in-range';
       }
 
-      const interactive = !this.readOnly && !booked && !past;
+      const interactive = !this.readOnly && !own && !booked && !past;
       html += `<div class="${cls}"${interactive ? ` data-date="${dateKey}"` : ''}>${day}</div>`;
     }
 
