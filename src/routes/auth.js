@@ -2,7 +2,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const { pool } = require('../db');
-const { sendMagicLink } = require('../services/email');
+const { sendMagicLink, sendAdminNewRequest } = require('../services/email');
 
 const router = express.Router();
 
@@ -73,6 +73,12 @@ router.post('/request', async (req, res) => {
       console.error('Failed to send magic link email:', emailErr.message);
       const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
       console.warn('[DEV] Magic link (email failed):', link);
+    }
+
+    try {
+      await sendAdminNewRequest({ start_date, end_date, description }, email);
+    } catch (emailErr) {
+      console.error('Failed to send admin notification email:', emailErr.message);
     }
 
     res.status(201).json({

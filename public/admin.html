@@ -45,21 +45,25 @@
 			<div id="block-message"></div>
 		</div>
 
+		<!-- Calendar -->
+		<div class="app-section">
+			<h2>Calendar</h2>
+			<div class="cal-nav">
+				<button class="button small" id="admin-cal-prev">&#8592; Previous</button>
+				<span id="admin-cal-month-label" style="font-weight:800;letter-spacing:0.05em;text-transform:uppercase;font-size:0.85em;color:#61686b;"></span>
+				<button class="button small" id="admin-cal-next">Next &#8594;</button>
+			</div>
+			<div id="admin-calendar-container"></div>
+			<div class="cal-legend">
+				<span class="cal-legend-item"><span class="cal-legend-dot cal-legend-dot--approved"></span> Approved</span>
+				<span class="cal-legend-item"><span class="cal-legend-dot cal-legend-dot--pending"></span> Pending</span>
+				<span class="cal-legend-item"><span class="cal-legend-dot cal-legend-dot--blocked"></span> Blocked</span>
+			</div>
+		</div>
+
 		<!-- Reservations -->
 		<div class="app-section">
 			<h2>Reservations</h2>
-
-			<!-- Filter bar -->
-			<div class="filter-bar" id="filter-bar">
-				<button class="button small active" data-filter="all">All</button>
-				<button class="button small" data-filter="pending">Pending</button>
-				<button class="button small" data-filter="approved">Approved</button>
-				<button class="button small" data-filter="denied">Denied</button>
-				<button class="button small" data-filter="cancelled">Cancelled</button>
-				<button class="button small" data-filter="expired">Expired</button>
-				<button class="button small" data-filter="complete">Complete</button>
-				<button class="button small" data-filter="blocked">Blocked</button>
-			</div>
 
 			<div id="admin-table-wrapper">
 				<div class="empty-state">
@@ -71,6 +75,7 @@
 	</div>
 
 	<script src="assets/js/api.js"></script>
+	<script src="assets/js/calendar.js"></script>
 	<script src="assets/js/admin.js"></script>
 
 </body>

@@ -119,6 +119,60 @@
   margin-bottom: 1em;
 }
 
+/* ── Admin calendar day status colors ────────────────────── */
+
+.cal-day--approved {
+  background-color: rgba(209, 231, 221, 0.8);
+  color: #0f5132;
+  cursor: default;
+}
+
+.cal-day--pending {
+  background-color: rgba(255, 243, 205, 0.9);
+  color: #856404;
+  cursor: default;
+}
+
+.cal-day--blocked {
+  background-color: rgba(232, 213, 245, 0.8);
+  color: #5a2d82;
+  cursor: default;
+}
+
+.cal-day--approved:hover,
+.cal-day--pending:hover,
+.cal-day--blocked:hover {
+  background-color: inherit;
+}
+
+/* ── Calendar legend ──────────────────────────────────────── */
+
+.cal-legend {
+  display: flex;
+  gap: 1.5em;
+  flex-wrap: wrap;
+  margin-top: 0.75em;
+  font-size: 0.8em;
+  color: #61686b;
+}
+
+.cal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.cal-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.cal-legend-dot--approved { background: rgba(209, 231, 221, 0.9); border: 1px solid #0f5132; }
+.cal-legend-dot--pending  { background: rgba(255, 243, 205, 0.9); border: 1px solid #856404; }
+.cal-legend-dot--blocked  { background: rgba(232, 213, 245, 0.9); border: 1px solid #5a2d82; }
+
 /* ── Reservation form reveal ──────────────────────────────── */
 
 #reservation-form {
@@ -282,49 +336,104 @@ body.app-page {
   color: #61686b;
 }
 
-/* ── Admin table ──────────────────────────────────────────── */
+/* ── Admin reservation cards ──────────────────────────────── */
 
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85em;
+.res-cards {
+  border: 1px solid #ebebeb;
+  border-radius: 5px;
+  overflow: hidden;
 }
 
-.admin-table th {
-  text-align: left;
-  padding: 0.6em 0.75em;
-  border-bottom: 2px solid #e0e0e0;
-  font-size: 0.8em;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #9fa6a8;
-}
-
-.admin-table td {
-  padding: 0.75em;
+.admin-res-card {
+  padding: 0.7em 1em;
   border-bottom: 1px solid #f0f0f0;
-  vertical-align: top;
 }
 
-.admin-table tr:hover td {
-  background: #fafafa;
+.admin-res-card:last-child { border-bottom: none; }
+.admin-res-card:hover { background: #fafafa; }
+
+.arc-row1 {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
 }
 
-.admin-table .user-name {
+.arc-dates {
+  font-size: 0.82em;
   font-weight: 700;
   color: #61686b;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.admin-table .user-email {
+.arc-guest {
   font-size: 0.85em;
-  color: #9fa6a8;
+  font-weight: 600;
+  color: #61686b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.arc-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  flex-shrink: 0;
+}
+
+.arc-row2 {
+  display: flex;
+  align-items: flex-start;
+  gap: 1em;
+  margin-top: 0.3em;
+}
+
+.arc-comments {
+  flex: 1;
+  font-size: 0.8em;
+  color: #9fa6a8;
+  line-height: 1.45;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.arc-note {
+  color: #8cd1a8;
+  font-style: italic;
+}
+
+.arc-actions {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* ── Expandable update panel ──────────────────────────────── */
+
+.arc-update > summary {
+  font-size: 0.78em;
+  color: #4a90e2;
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.arc-update > summary::-webkit-details-marker { display: none; }
+.arc-update > summary::marker { display: none; }
+
+.arc-update[open] > summary { margin-bottom: 0.5em; }
+
+.arc-update .status-form { min-width: 160px; }
+
+.arc-block-form { display: contents; }
+.arc-block-form button { margin: 0; }
 
 .status-form {
   display: flex;
   flex-direction: column;
   gap: 0.5em;
-  min-width: 200px;
 }
 
 .status-form select {
@@ -381,19 +490,25 @@ body.app-page {
   margin-bottom: 0.5em;
 }
 
-/* ── Admin filter bar ─────────────────────────────────────── */
+/* ── Admin reservation groups ─────────────────────────────── */
 
-.filter-bar {
-  display: flex;
-  gap: 0.5em;
-  flex-wrap: wrap;
-  margin-bottom: 1.5em;
+.res-group {
+  margin-bottom: 2em;
 }
 
-.filter-bar .button.active {
-  background-color: #8cd1a8;
-  color: #fff;
-  border-color: #8cd1a8;
+.res-group:last-child {
+  margin-bottom: 0;
+}
+
+.res-group-header {
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fa6a8;
+  padding-bottom: 0.6em;
+  margin-bottom: 0.5em;
+  border-bottom: 1px solid #e8e8e8;
 }
 
 /* ── Calendar own-booking state ──────────────────────────── */

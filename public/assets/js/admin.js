@@ -20,6 +20,17 @@
     window.location.href = '/';
   });
 
+  // ── Admin calendar ────────────────────────────────────────
+
+  const adminCal = new ReservationCalendar({
+    containerId: 'admin-calendar-container',
+    prevBtnId:   'admin-cal-prev',
+    nextBtnId:   'admin-cal-next',
+    labelId:     'admin-cal-month-label',
+    readOnly:    true,
+  });
+  adminCal.render();
+
   // ── Block Time form ────────────────────────────────────────
 
   document.getElementById('form-block').addEventListener('submit', async (e) => {
@@ -52,7 +63,6 @@
   });
 
   let allReservations = [];
-  let activeFilter    = 'all';
 
   // ── Load ──────────────────────────────────────────────────
 
@@ -60,107 +70,141 @@
     const wrapper = document.getElementById('admin-table-wrapper');
     try {
       allReservations = await API.get('/api/admin/reservations');
-      renderTable();
+      adminCal.setBookedRanges(
+        allReservations.filter(r => ['approved', 'pending', 'blocked'].includes(r.status))
+      );
+      renderGroups();
     } catch (err) {
       wrapper.innerHTML = `<div class="msg-error">${err.message}</div>`;
     }
   }
 
-  // ── Filter bar ────────────────────────────────────────────
+  // ── Grouped render ────────────────────────────────────────
 
-  document.getElementById('filter-bar').addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-filter]');
-    if (!btn) return;
-    document.querySelectorAll('#filter-bar [data-filter]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeFilter = btn.dataset.filter;
-    renderTable();
-  });
-
-  // ── Table render ─────────────────────────────────────────
-
-  function renderTable() {
+  function renderGroups() {
     const wrapper = document.getElementById('admin-table-wrapper');
-    const rows = activeFilter === 'all'
-      ? allReservations
-      : allReservations.filter(r => r.status === activeFilter);
+    const todayKey = new Date().toISOString().slice(0, 10);
 
-    if (!rows.length) {
+    const byStart = (a, b) => a.start_date < b.start_date ? -1 : 1;
+    const byStartDesc = (a, b) => a.start_date < b.start_date ? 1 : -1;
+
+    const groups = [
+      {
+        label: 'Pending',
+        rows: allReservations
+          .filter(r => r.status === 'pending')
+          .sort(byStart),
+      },
+      {
+        label: 'Upcoming',
+        rows: allReservations
+          .filter(r => r.status === 'approved' || (r.status === 'blocked' && r.start_date >= todayKey))
+          .sort(byStart),
+      },
+      {
+        label: 'Complete',
+        rows: allReservations
+          .filter(r => r.status === 'complete')
+          .sort(byStartDesc),
+      },
+      {
+        label: 'Cancelled',
+        rows: allReservations
+          .filter(r => ['cancelled', 'denied', 'expired'].includes(r.status))
+          .sort(byStartDesc),
+      },
+    ];
+
+    const populated = groups.filter(g => g.rows.length > 0);
+
+    if (!populated.length) {
       wrapper.innerHTML = `<div class="empty-state">
         <div class="empty-icon">&#x1F4C5;</div>
-        <p>No reservations${activeFilter !== 'all' ? ` with status "${activeFilter}"` : ''}.</p>
+        <p>No reservations yet.</p>
       </div>`;
       return;
     }
 
-    wrapper.innerHTML = `
-      <div class="table-wrapper" style="overflow-x:auto;">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Guest</th>
-              <th>Dates</th>
-              <th>About Visit</th>
-              <th>Status</th>
-              <th>Update</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(r => renderRow(r)).join('')}
-          </tbody>
-        </table>
-      </div>`;
+    wrapper.innerHTML = populated.map(group => `
+      <div class="res-group">
+        <div class="res-group-header">${group.label}</div>
+        <div class="res-cards">
+          ${group.rows.map(r => renderCard(r)).join('')}
+        </div>
+      </div>
+    `).join('');
 
-    wrapper.querySelectorAll('.status-form').forEach(form => {
+    wrapper.querySelectorAll('.status-form, .arc-block-form').forEach(form => {
       form.addEventListener('submit', handleStatusUpdate);
     });
   }
 
-  function renderRow(r) {
-    const name  = [r.user_first_name, r.user_last_name].filter(Boolean).join(' ');
-    const isBlock   = r.status === 'blocked';
-    const canUpdate = isBlock || ['pending','approved'].includes(r.status);
+  function renderCard(r) {
+    const isBlock = r.status === 'blocked';
+    const name = isBlock
+      ? 'Admin Block'
+      : ([r.user_first_name, r.user_last_name].filter(Boolean).join(' ') || r.user_email);
 
-    let updateCell;
+    const dates = fmtAdminDateRange(r.start_date, r.end_date);
+
+    const commentParts = [
+      r.description ? escapeHtml(r.description) : null,
+      r.admin_note  ? `<span class="arc-note">Note: ${escapeHtml(r.admin_note)}</span>` : null,
+    ].filter(Boolean);
+    const commentsHtml = commentParts.join('<br>');
+
     if (isBlock) {
-      updateCell = `
-        <form class="status-form" data-id="${r.id}">
-          <input type="hidden" name="status" value="cancelled" />
-          <button type="submit" class="button small">Remove Block</button>
-        </form>`;
-    } else if (canUpdate) {
-      updateCell = `
-        <form class="status-form" data-id="${r.id}">
-          <select name="status">
-            <option value="">— set status —</option>
-            <option value="approved">Approved</option>
-            <option value="denied">Denied</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <textarea name="note" placeholder="Note to guest (included in status update email)"></textarea>
-          <button type="submit" class="button primary small">Save</button>
-        </form>`;
-    } else {
-      updateCell = '<span style="color:#9fa6a8;font-size:0.85em;">—</span>';
+      return `
+        <div class="admin-res-card" data-id="${r.id}">
+          <div class="arc-row1">
+            <span class="arc-dates">${dates}</span>
+            <span class="arc-guest">${escapeHtml(name)}</span>
+            <div class="arc-right">
+              <span class="badge badge-blocked">blocked</span>
+              <form class="arc-block-form" data-id="${r.id}">
+                <input type="hidden" name="status" value="cancelled" />
+                <button type="submit" class="button small">Remove</button>
+              </form>
+            </div>
+          </div>
+        </div>`;
     }
 
+    let actionsHtml = '';
+    if (['pending', 'approved'].includes(r.status)) {
+      actionsHtml = `
+        <details class="arc-update">
+          <summary>Update &#9662;</summary>
+          <form class="status-form" data-id="${r.id}">
+            <select name="status">
+              <option value="">— set status —</option>
+              <option value="approved">Approved</option>
+              <option value="denied">Denied</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <textarea name="note" placeholder="Optional note for guest…"></textarea>
+            <button type="submit" class="button primary small">Save</button>
+          </form>
+        </details>`;
+    }
+
+    const row2 = commentsHtml || actionsHtml ? `
+      <div class="arc-row2">
+        <div class="arc-comments">${commentsHtml}</div>
+        ${actionsHtml ? `<div class="arc-actions">${actionsHtml}</div>` : ''}
+      </div>` : '';
+
     return `
-      <tr data-id="${r.id}">
-        <td>
-          <div class="user-name">${escapeHtml(isBlock ? '(Admin block)' : (name || '—'))}</div>
-          <div class="user-email">${escapeHtml(r.user_email)}</div>
-        </td>
-        <td style="white-space:nowrap;">
-          ${fmtDate(r.start_date)}<br>
-          <small style="color:#9fa6a8;">to ${fmtDate(r.end_date)}</small>
-        </td>
-        <td style="word-break:break-word;font-size:0.85em;">
-          ${r.description ? escapeHtml(r.description) : '<em style="color:#9fa6a8;">—</em>'}
-          ${r.admin_note  ? `<div style="margin-top:0.4em;font-style:italic;color:#8cd1a8;">Note: ${escapeHtml(r.admin_note)}</div>` : ''}
-        </td>
-        <td><span class="badge badge-${r.status}">${r.status}</span></td>
-        <td>${updateCell}</td>
-      </tr>`;
+      <div class="admin-res-card" data-id="${r.id}">
+        <div class="arc-row1">
+          <span class="arc-dates">${dates}</span>
+          <span class="arc-guest">${escapeHtml(name)}</span>
+          <div class="arc-right">
+            <span class="badge badge-${r.status}">${r.status}</span>
+          </div>
+        </div>
+        ${row2}
+      </div>`;
   }
 
   async function handleStatusUpdate(e) {
@@ -168,7 +212,7 @@
     const form   = e.currentTarget;
     const id     = form.dataset.id;
     const status = form.querySelector('[name="status"]').value;
-    const note   = form.querySelector('[name="note"]').value.trim();
+    const note   = form.querySelector('[name="note"]')?.value.trim() ?? '';
 
     if (!status) {
       alert('Please select a status.');
@@ -184,7 +228,7 @@
         status,
         admin_note: note || undefined,
       });
-      await load(); // refresh table
+      await load();
     } catch (err) {
       alert('Error: ' + err.message);
       btn.disabled = false;
@@ -195,10 +239,15 @@
   await load();
 })();
 
-function fmtDate(dateStr) {
-  const [year, month, day] = String(dateStr).slice(0, 10).split('-').map(Number);
-  const d = new Date(year, month - 1, day);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+function fmtAdminDateRange(startStr, endStr) {
+  const currentYear = new Date().getFullYear();
+  const [sy, sm, sd] = startStr.slice(0, 10).split('-').map(Number);
+  const [ey, em, ed] = endStr.slice(0, 10).split('-').map(Number);
+  const showYear = sy !== currentYear || ey !== currentYear || sy !== ey;
+  if (showYear) {
+    return `${sm}/${sd}/${String(sy).slice(2)} \u2192 ${em}/${ed}/${String(ey).slice(2)}`;
+  }
+  return `${sm}/${sd} \u2192 ${em}/${ed}`;
 }
 
 function escapeHtml(str) {
