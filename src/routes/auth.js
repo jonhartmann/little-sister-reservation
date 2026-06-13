@@ -71,7 +71,7 @@ router.post('/request', async (req, res) => {
       await sendMagicLink(email, token);
     } catch (emailErr) {
       console.error('Failed to send magic link email:', emailErr.message);
-      const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
+      const link = `${process.env.BASE_URL}/api/auth/verify?token=${token}`;
       console.warn('[DEV] Magic link (email failed):', link);
     }
 
@@ -88,6 +88,91 @@ router.post('/request', async (req, res) => {
   } catch (err) {
     console.error('POST /api/auth/request error:', err);
     res.status(500).json({ error: 'Failed to process reservation request' });
+  }
+});
+
+// GET /api/auth/verify?token=...
+// Server-side token validation — redirects directly to dashboard or admin.
+// Designed for magic-link clicks in mobile/in-app browsers where JS may be unreliable.
+router.get('/verify', async (req, res) => {
+  const token = req.query.token;
+
+  if (!token) {
+    return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invalid Link</title></head><body style="font-family:sans-serif;text-align:center;padding:3rem"><h2>Invalid Link</h2><p>This sign-in link is missing a token.</p><p><a href="/">Back to Home</a></p></body></html>`);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const tokenResult = await client.query(
+      `SELECT id, email, expires_at, used_at
+         FROM auth_tokens
+        WHERE token = $1
+        FOR UPDATE`,
+      [token]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(401).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invalid Link</title></head><body style="font-family:sans-serif;text-align:center;padding:3rem"><h2>Sign-In Failed</h2><p>This sign-in link is invalid or has expired.</p><p><a href="/">Request a new link</a></p></body></html>`);
+    }
+
+    const authToken = tokenResult.rows[0];
+
+    if (authToken.used_at) {
+      await client.query('ROLLBACK');
+      return res.status(401).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Link Already Used</title></head><body style="font-family:sans-serif;text-align:center;padding:3rem"><h2>Link Already Used</h2><p>This sign-in link has already been used. Please request a new one.</p><p><a href="/">Request a new link</a></p></body></html>`);
+    }
+
+    if (new Date(authToken.expires_at) < new Date()) {
+      await client.query('ROLLBACK');
+      return res.status(401).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Link Expired</title></head><body style="font-family:sans-serif;text-align:center;padding:3rem"><h2>Link Expired</h2><p>This sign-in link has expired (links are valid for 15 minutes). Please request a new one.</p><p><a href="/">Request a new link</a></p></body></html>`);
+    }
+
+    await client.query(
+      `UPDATE auth_tokens SET used_at = NOW() WHERE id = $1`,
+      [authToken.id]
+    );
+
+    const userResult = await client.query(
+      `SELECT id, email, first_name, last_name, is_admin
+         FROM users
+        WHERE email = $1`,
+      [authToken.email]
+    );
+
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(401).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sign-In Failed</title></head><body style="font-family:sans-serif;text-align:center;padding:3rem"><h2>Sign-In Failed</h2><p>User not found. Please request a new sign-in link.</p><p><a href="/">Back to Home</a></p></body></html>`);
+    }
+
+    const user = userResult.rows[0];
+    const sessionToken = crypto.randomBytes(40).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await client.query(
+      `INSERT INTO sessions (user_id, token, expires_at) VALUES ($1, $2, $3)`,
+      [user.id, sessionToken, expiresAt]
+    );
+
+    await client.query('COMMIT');
+
+    res.cookie('session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+
+    res.redirect(user.is_admin ? '/admin.html' : '/dashboard.html');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('GET /api/auth/verify error:', err);
+    res.status(500).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Error</title></head><body style="font-family:sans-serif;text-align:center;padding:3rem"><h2>Something went wrong</h2><p>Please try requesting a new sign-in link.</p><p><a href="/">Back to Home</a></p></body></html>`);
+  } finally {
+    client.release();
   }
 });
 
@@ -219,7 +304,7 @@ router.post('/signin', async (req, res) => {
       await sendMagicLink(email, token);
     } catch (emailErr) {
       console.error('Failed to send sign-in email:', emailErr.message);
-      const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
+      const link = `${process.env.BASE_URL}/api/auth/verify?token=${token}`;
       console.warn('[DEV] Magic link (email failed):', link);
     }
 

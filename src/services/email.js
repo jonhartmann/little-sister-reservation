@@ -9,7 +9,7 @@ function getClient() {
 }
 
 async function sendMagicLink(email, token) {
-  const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
+  const link = `${process.env.BASE_URL}/api/auth/verify?token=${token}`;
 
   await getClient().post('send', { version: 'v3.1' }).request({
     Messages: [{
