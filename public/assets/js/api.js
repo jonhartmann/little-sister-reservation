@@ -8,6 +8,8 @@ const API = {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
     };
+    const stored = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ls_session');
+    if (stored) opts.headers['Authorization'] = `Bearer ${stored}`;
     if (body !== undefined) opts.body = JSON.stringify(body);
     const res = await fetch(path, opts);
     const data = await res.json();
