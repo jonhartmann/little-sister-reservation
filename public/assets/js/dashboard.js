@@ -21,6 +21,7 @@
   // Sign out
   document.getElementById('btn-signout').addEventListener('click', async () => {
     try { await API.post('/api/auth/logout'); } catch {}
+    sessionStorage.removeItem('ls_session');
     window.location.href = '/';
   });
 

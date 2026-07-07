@@ -169,6 +169,7 @@ router.post('/verify', async (req, res) => {
 
     res.json({
       message: 'Signed in successfully',
+      sessionToken,
       user: {
         id: user.id,
         email: user.email,

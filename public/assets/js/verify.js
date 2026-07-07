@@ -15,7 +15,8 @@
   }
 
   try {
-    const { user } = await API.post('/api/auth/verify', { token });
+    const { user, sessionToken } = await API.post('/api/auth/verify', { token });
+    if (sessionToken) sessionStorage.setItem('ls_session', sessionToken);
     content.innerHTML = `
       <div class="verify-icon">&#x2705;</div>
       <h3>Signed in!</h3>
