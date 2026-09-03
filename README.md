@@ -7,7 +7,7 @@ A lightweight reservation system for Little Sister — a private guest house ADU
 - **Frontend:** Vanilla JS, HTML, CSS (no build step)
 - **Backend:** Node.js + Express
 - **Database:** PostgreSQL (Heroku Postgres or compatible)
-- **Email:** Mailjet
+- **Email:** Resend
 - **Hosting:** Heroku (or any Node-compatible host)
 
 ---
@@ -100,7 +100,7 @@ A background job (hourly) removes expired session tokens and auth tokens from th
 
 ## Email Notifications
 
-All email is sent via Mailjet.
+All email is sent via Resend.
 
 **Guest emails:**
 
@@ -123,7 +123,7 @@ The approval email includes property address, check-in/out times, host contact i
 
 > **Spam notice:** Emails include a note asking guests to check their Spam folder, since the system sends from a small/new domain.
 >
-> **Dev tip:** If email fails to send (e.g. Mailjet not configured), the magic link is printed to the server console as `[DEV] Magic link (email failed): ...`.
+> **Dev tip:** If email fails to send (e.g. Resend not configured), the magic link is printed to the server console as `[DEV] Magic link (email failed): ...`.
 
 ---
 
@@ -136,9 +136,8 @@ Create a `.env` file in the project root. All variables are required unless mark
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `MAILJET_API_KEY` | Mailjet API key |
-| `MAILJET_SECRET_KEY` | Mailjet secret key |
-| `MAILJET_FROM_EMAIL` | Sender email address (must be verified in Mailjet) |
+| `RESEND_API_KEY` | Resend API key |
+| `RESEND_FROM_EMAIL` | Sender email address (must be verified in Resend) |
 | `BASE_URL` | Full URL of the app, e.g. `https://yourdomain.com` — **must include `http://` or `https://`** |
 | `ADMIN_EMAILS` | Comma-separated list of admin email addresses, e.g. `host@example.com,cohost@example.com` |
 
@@ -148,7 +147,7 @@ Create a `.env` file in the project root. All variables are required unless mark
 |----------|---------|-------------|
 | `PORT` | `3000` | Port the server listens on |
 | `NODE_ENV` | — | Set to `production` to enable secure cookies |
-| `MAILJET_FROM_NAME` | — | Display name for outgoing emails |
+| `RESEND_FROM_NAME` | — | Display name for outgoing emails |
 | `CHECKIN_REMINDER_DAYS` | `3` | Days before check-in to send the guest a reminder email |
 
 ### Optional — Property Details (used in approval emails)
@@ -171,7 +170,7 @@ These appear in the confirmation email sent when a reservation is approved. Leav
 
 - Node.js v14 or higher
 - A PostgreSQL database
-- A Mailjet account with a verified sender domain
+- A Resend account with a verified sender domain
 
 ### Installation
 
@@ -232,7 +231,7 @@ little-sister-reservation/
     │   ├── profile.js           # /api/profile — get/update current user
     │   └── admin.js             # /api/admin/* — reservation management, time blocks
     └── services/
-        ├── email.js             # Mailjet integration: all outgoing emails
+        ├── email.js             # Resend integration: all outgoing emails
         └── scheduler.js         # Daily jobs: expire/complete reservations, send check-in reminders
 ```
 
