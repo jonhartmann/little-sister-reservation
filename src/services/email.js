@@ -26,7 +26,7 @@ async function sendMagicLink(email, token) {
   await sendEmail({
     to: email,
     subject: 'Your Little Sister sign-in link',
-    textPart: `Click this link to sign in (expires in 15 minutes):\n\n${link}\n\nIf you don't see this email in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.\n\nIf you did not request this, you can ignore this email.`,
+    textPart: `Click this link to sign in (expires in 15 minutes):\n\n${link}\n\nIf you did not request this, you can ignore this email.`,
     htmlPart: `
       <h2>Sign in to Little Sister</h2>
       <p>Click the button below to sign in. This link expires in <strong>15 minutes</strong> and can only be used once.</p>
