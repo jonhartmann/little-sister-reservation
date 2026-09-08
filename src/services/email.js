@@ -32,7 +32,6 @@ async function sendMagicLink(email, token) {
       <p>Click the button below to sign in. This link expires in <strong>15 minutes</strong> and can only be used once.</p>
       <p><a href="${link}" style="background:#4a90e2;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;">Sign In</a></p>
       <p>Or copy and paste this URL:<br><code>${link}</code></p>
-      <p style="font-size:0.9em;color:#888;">If you don't see future emails from us in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.</p>
       <p><em>If you did not request this, you can ignore this email.</em></p>
     `,
   });
