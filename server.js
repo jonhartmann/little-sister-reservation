@@ -53,9 +53,8 @@ app.use((err, req, res, next) => {
 function checkEnv() {
   const required = [
     'DATABASE_URL',
-    'MAILJET_API_KEY',
-    'MAILJET_SECRET_KEY',
-    'MAILJET_FROM_EMAIL',
+    'RESEND_API_KEY',
+    'RESEND_FROM_EMAIL',
     'BASE_URL',
   ];
   const missing = required.filter(k => !process.env[k]);

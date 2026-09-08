@@ -1,34 +1,40 @@
 'use strict';
-const Mailjet = require('node-mailjet');
+const { Resend } = require('resend');
 
 function getClient() {
-  return Mailjet.apiConnect(
-    process.env.MAILJET_API_KEY,
-    process.env.MAILJET_SECRET_KEY,
-  );
+  return new Resend(process.env.RESEND_API_KEY);
+}
+
+async function sendEmail({ to, subject, textPart, htmlPart, replyTo }) {
+  const { error } = await getClient().emails.send({
+    from: `${process.env.RESEND_FROM_NAME} <${process.env.RESEND_FROM_EMAIL}>`,
+    to,
+    subject,
+    text: textPart,
+    html: htmlPart,
+    ...(replyTo ? { replyTo } : {}),
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 async function sendMagicLink(email, token) {
   const link = `${process.env.BASE_URL}/verify.html?token=${token}`;
 
-  await getClient().post('send', { version: 'v3.1' }).request({
-    Messages: [{
-      From: {
-        Email: process.env.MAILJET_FROM_EMAIL,
-        Name: process.env.MAILJET_FROM_NAME,
-      },
-      To: [{ Email: email }],
-      Subject: 'Your Little Sister sign-in link',
-      TextPart: `Click this link to sign in (expires in 15 minutes):\n\n${link}\n\nIf you don't see this email in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.\n\nIf you did not request this, you can ignore this email.`,
-      HTMLPart: `
-        <h2>Sign in to Little Sister</h2>
-        <p>Click the button below to sign in. This link expires in <strong>15 minutes</strong> and can only be used once.</p>
-        <p><a href="${link}" style="background:#4a90e2;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;">Sign In</a></p>
-        <p>Or copy and paste this URL:<br><code>${link}</code></p>
-        <p style="font-size:0.9em;color:#888;">If you don't see future emails from us in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.</p>
-        <p><em>If you did not request this, you can ignore this email.</em></p>
-      `,
-    }],
+  await sendEmail({
+    to: email,
+    subject: 'Your Little Sister sign-in link',
+    textPart: `Click this link to sign in (expires in 15 minutes):\n\n${link}\n\nIf you don't see this email in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.\n\nIf you did not request this, you can ignore this email.`,
+    htmlPart: `
+      <h2>Sign in to Little Sister</h2>
+      <p>Click the button below to sign in. This link expires in <strong>15 minutes</strong> and can only be used once.</p>
+      <p><a href="${link}" style="background:#4a90e2;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;">Sign In</a></p>
+      <p>Or copy and paste this URL:<br><code>${link}</code></p>
+      <p style="font-size:0.9em;color:#888;">If you don't see future emails from us in your inbox, please check your Spam or Junk folder — we're a small sender and occasionally get filtered.</p>
+      <p><em>If you did not request this, you can ignore this email.</em></p>
+    `,
   });
 }
 
@@ -140,18 +146,7 @@ function buildStatusEmail(reservation, adminNote) {
 async function sendStatusUpdate(email, reservation, adminNote) {
   const { subject, textPart, htmlPart } = buildStatusEmail(reservation, adminNote);
 
-  await getClient().post('send', { version: 'v3.1' }).request({
-    Messages: [{
-      From: {
-        Email: process.env.MAILJET_FROM_EMAIL,
-        Name: process.env.MAILJET_FROM_NAME,
-      },
-      To: [{ Email: email }],
-      Subject: subject,
-      TextPart: textPart,
-      HTMLPart: htmlPart,
-    }],
-  });
+  await sendEmail({ to: email, subject, textPart, htmlPart });
 }
 
 async function sendCheckinReminder(email, firstName, reservation) {
@@ -168,49 +163,43 @@ async function sendCheckinReminder(email, firstName, reservation) {
 
   const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
 
-  await getClient().post('send', { version: 'v3.1' }).request({
-    Messages: [{
-      From: {
-        Email: process.env.MAILJET_FROM_EMAIL,
-        Name:  process.env.MAILJET_FROM_NAME,
-      },
-      To: [{ Email: email }],
-      Subject: `Your Little Sister stay starts in ${days} day${days === 1 ? '' : 's'}!`,
-      TextPart: [
-        `${greeting}`,
-        `Just a reminder that your stay at Little Sister begins in ${days} day${days === 1 ? '' : 's'}!`,
-        `Dates: ${start} → ${end}`,
-        `Address: ${addr}`,
-        `Check-in: ${checkIn}\nCheck-out: ${checkOut}`,
-        `Questions? Contact us:\n${contact}\n${phone}`,
-        `View your reservation: ${dashboardUrl}`,
-      ].join('\n\n'),
-      HTMLPart: `
-        <h2>Your stay is coming up!</h2>
-        <p>${greeting}</p>
-        <p>Just a reminder that your stay at Little Sister begins in <strong>${days} day${days === 1 ? '' : 's'}</strong>. We can't wait to have you!</p>
-        <table style="border-collapse:collapse;width:100%;margin:1.5em 0;">
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Dates</td>
-            <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Address</td>
-            <td style="padding:0.4em 0;">${addr}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Check-in</td>
-            <td style="padding:0.4em 0;">${checkIn}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Check-out</td>
-            <td style="padding:0.4em 0;">${checkOut}</td>
-          </tr>
-        </table>
-        <p>Questions? Reach out any time — <strong>${contact}</strong> at ${phone}.</p>
-        <p><a href="${dashboardUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">View Reservation</a></p>
-      `,
-    }],
+  await sendEmail({
+    to: email,
+    subject: `Your Little Sister stay starts in ${days} day${days === 1 ? '' : 's'}!`,
+    textPart: [
+      `${greeting}`,
+      `Just a reminder that your stay at Little Sister begins in ${days} day${days === 1 ? '' : 's'}!`,
+      `Dates: ${start} → ${end}`,
+      `Address: ${addr}`,
+      `Check-in: ${checkIn}\nCheck-out: ${checkOut}`,
+      `Questions? Contact us:\n${contact}\n${phone}`,
+      `View your reservation: ${dashboardUrl}`,
+    ].join('\n\n'),
+    htmlPart: `
+      <h2>Your stay is coming up!</h2>
+      <p>${greeting}</p>
+      <p>Just a reminder that your stay at Little Sister begins in <strong>${days} day${days === 1 ? '' : 's'}</strong>. We can't wait to have you!</p>
+      <table style="border-collapse:collapse;width:100%;margin:1.5em 0;">
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Dates</td>
+          <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Address</td>
+          <td style="padding:0.4em 0;">${addr}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Check-in</td>
+          <td style="padding:0.4em 0;">${checkIn}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Check-out</td>
+          <td style="padding:0.4em 0;">${checkOut}</td>
+        </tr>
+      </table>
+      <p>Questions? Reach out any time — <strong>${contact}</strong> at ${phone}.</p>
+      <p><a href="${dashboardUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">View Reservation</a></p>
+    `,
   });
 }
 
@@ -227,35 +216,29 @@ async function sendGuestCancellationAlert(reservation, guest) {
   const guestName = [guest.first_name, guest.last_name].filter(Boolean).join(' ') || guest.email;
   const adminUrl  = `${process.env.BASE_URL}/admin.html`;
 
-  await getClient().post('send', { version: 'v3.1' }).request({
-    Messages: [{
-      From: {
-        Email: process.env.MAILJET_FROM_EMAIL,
-        Name:  process.env.MAILJET_FROM_NAME,
-      },
-      To: adminEmails.map(e => ({ Email: e })),
-      Subject: `Reservation cancelled — ${start} → ${end}`,
-      TextPart: `A guest has cancelled their reservation.\n\nGuest: ${guestName} (${guest.email})\nDates: ${start} → ${end}\n\nView in admin: ${adminUrl}`,
-      HTMLPart: `
-        <h2>Reservation Cancelled</h2>
-        <p>A guest has cancelled their reservation.</p>
-        <table style="border-collapse:collapse;width:100%;margin:1em 0;">
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Guest</td>
-            <td style="padding:0.4em 0;font-weight:700;">${guestName}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Email</td>
-            <td style="padding:0.4em 0;">${guest.email}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Dates</td>
-            <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
-          </tr>
-        </table>
-        <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">View in Admin</a></p>
-      `,
-    }],
+  await sendEmail({
+    to: adminEmails,
+    subject: `Reservation cancelled — ${start} → ${end}`,
+    textPart: `A guest has cancelled their reservation.\n\nGuest: ${guestName} (${guest.email})\nDates: ${start} → ${end}\n\nView in admin: ${adminUrl}`,
+    htmlPart: `
+      <h2>Reservation Cancelled</h2>
+      <p>A guest has cancelled their reservation.</p>
+      <table style="border-collapse:collapse;width:100%;margin:1em 0;">
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Guest</td>
+          <td style="padding:0.4em 0;font-weight:700;">${guestName}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Email</td>
+          <td style="padding:0.4em 0;">${guest.email}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Dates</td>
+          <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
+        </tr>
+      </table>
+      <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">View in Admin</a></p>
+    `,
   });
 }
 
@@ -277,36 +260,30 @@ async function sendNewReservationAlert(reservation, guest) {
     ? `<p style="color:#555;font-style:italic;">${reservation.description}</p>`
     : '';
 
-  await getClient().post('send', { version: 'v3.1' }).request({
-    Messages: [{
-      From: {
-        Email: process.env.MAILJET_FROM_EMAIL,
-        Name:  process.env.MAILJET_FROM_NAME,
-      },
-      To: adminEmails.map(e => ({ Email: e })),
-      Subject: `New reservation request: ${start} → ${end}`,
-      TextPart: `A new reservation request has been submitted.\n\nGuest: ${guestName} (${guest.email})\nDates: ${start} → ${end}${descText}\n\nReview it here: ${adminUrl}`,
-      HTMLPart: `
-        <h2>New Reservation Request</h2>
-        <p>A new reservation request has been submitted.</p>
-        <table style="border-collapse:collapse;width:100%;margin:1em 0;">
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Guest</td>
-            <td style="padding:0.4em 0;font-weight:700;">${guestName}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Email</td>
-            <td style="padding:0.4em 0;">${guest.email}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Dates</td>
-            <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
-          </tr>
-        </table>
-        ${descHtml}
-        <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">Review Request</a></p>
-      `,
-    }],
+  await sendEmail({
+    to: adminEmails,
+    subject: `New reservation request: ${start} → ${end}`,
+    textPart: `A new reservation request has been submitted.\n\nGuest: ${guestName} (${guest.email})\nDates: ${start} → ${end}${descText}\n\nReview it here: ${adminUrl}`,
+    htmlPart: `
+      <h2>New Reservation Request</h2>
+      <p>A new reservation request has been submitted.</p>
+      <table style="border-collapse:collapse;width:100%;margin:1em 0;">
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Guest</td>
+          <td style="padding:0.4em 0;font-weight:700;">${guestName}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Email</td>
+          <td style="padding:0.4em 0;">${guest.email}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.4em 1em 0.4em 0;color:#9fa6a8;white-space:nowrap;">Dates</td>
+          <td style="padding:0.4em 0;font-weight:700;">${start} &rarr; ${end}</td>
+        </tr>
+      </table>
+      ${descHtml}
+      <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">Review Request</a></p>
+    `,
   });
 }
 
@@ -326,32 +303,26 @@ async function sendAdminNewRequest(reservation, guestEmail) {
     ? `<p><strong>Message from guest:</strong> ${reservation.description}</p>`
     : '';
 
-  await getClient().post('send', { version: 'v3.1' }).request({
-    Messages: [{
-      From: {
-        Email: process.env.MAILJET_FROM_EMAIL,
-        Name: process.env.MAILJET_FROM_NAME,
-      },
-      To: adminEmails.map(e => ({ Email: e })),
-      Subject: `New reservation request: ${start} → ${end}`,
-      TextPart: `A new reservation request has been submitted.\n\nGuest: ${guestEmail}\nDates: ${start} → ${end}${noteText}\n\nReview it here: ${adminUrl}`,
-      HTMLPart: `
-        <h2>New Reservation Request</h2>
-        <p>A new reservation request has been submitted.</p>
-        <table style="border-collapse:collapse;width:100%;margin:1.5em 0;">
-          <tr>
-            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Guest</td>
-            <td style="padding:0.5em 0;">${guestEmail}</td>
-          </tr>
-          <tr>
-            <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Dates</td>
-            <td style="padding:0.5em 0;font-weight:700;">${start} &rarr; ${end}</td>
-          </tr>
-        </table>
-        ${noteHtml}
-        <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">Review Request</a></p>
-      `,
-    }],
+  await sendEmail({
+    to: adminEmails,
+    subject: `New reservation request: ${start} → ${end}`,
+    textPart: `A new reservation request has been submitted.\n\nGuest: ${guestEmail}\nDates: ${start} → ${end}${noteText}\n\nReview it here: ${adminUrl}`,
+    htmlPart: `
+      <h2>New Reservation Request</h2>
+      <p>A new reservation request has been submitted.</p>
+      <table style="border-collapse:collapse;width:100%;margin:1.5em 0;">
+        <tr>
+          <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Guest</td>
+          <td style="padding:0.5em 0;">${guestEmail}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.5em 1em 0.5em 0;color:#9fa6a8;white-space:nowrap;vertical-align:top;">Dates</td>
+          <td style="padding:0.5em 0;font-weight:700;">${start} &rarr; ${end}</td>
+        </tr>
+      </table>
+      ${noteHtml}
+      <p><a href="${adminUrl}" style="background:#4a90e2;color:white;padding:10px 22px;text-decoration:none;border-radius:4px;">Review Request</a></p>
+    `,
   });
 }
 
@@ -365,25 +336,19 @@ async function sendGuestMessage(guest, message) {
 
   const guestName = [guest.first_name, guest.last_name].filter(Boolean).join(' ') || guest.email;
 
-  await getClient().post('send', { version: 'v3.1' }).request({
-    Messages: [{
-      From: {
-        Email: process.env.MAILJET_FROM_EMAIL,
-        Name:  process.env.MAILJET_FROM_NAME,
-      },
-      To: adminEmails.map(e => ({ Email: e })),
-      ReplyTo: { Email: guest.email, Name: guestName },
-      Subject: `Message from guest: ${guestName}`,
-      TextPart: `${guestName} (${guest.email}) sent a message:\n\n${message}\n\nReply directly to this email to respond.`,
-      HTMLPart: `
-        <h2>Message from Guest</h2>
-        <p><strong>${guestName}</strong> (${guest.email}) sent you a message:</p>
-        <blockquote style="border-left:3px solid #8cd1a8;margin:1em 0;padding:0.75em 1em;background:#f0f7f4;border-radius:0 4px 4px 0;">
-          ${escapeHtmlEmail(message)}
-        </blockquote>
-        <p style="font-size:0.9em;color:#9fa6a8;">Reply directly to this email to respond to the guest.</p>
-      `,
-    }],
+  await sendEmail({
+    to: adminEmails,
+    replyTo: guest.email,
+    subject: `Message from guest: ${guestName}`,
+    textPart: `${guestName} (${guest.email}) sent a message:\n\n${message}\n\nReply directly to this email to respond.`,
+    htmlPart: `
+      <h2>Message from Guest</h2>
+      <p><strong>${guestName}</strong> (${guest.email}) sent you a message:</p>
+      <blockquote style="border-left:3px solid #8cd1a8;margin:1em 0;padding:0.75em 1em;background:#f0f7f4;border-radius:0 4px 4px 0;">
+        ${escapeHtmlEmail(message)}
+      </blockquote>
+      <p style="font-size:0.9em;color:#9fa6a8;">Reply directly to this email to respond to the guest.</p>
+    `,
   });
 }
 
@@ -404,4 +369,3 @@ module.exports = {
   sendGuestMessage,
   sendAdminNewRequest,
 };
-
